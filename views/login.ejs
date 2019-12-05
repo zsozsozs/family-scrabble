@@ -1,0 +1,17 @@
+<%- include("partials/header.ejs"); -%>
+
+<h2>Login</h2>
+<form class="" action="/playerLogin" method="post">
+  <label for="firstName">Name:</label><input type="text" id="firstName" name="firstName" value="">
+  <button id="playerLogin" type="submit" name="button">Submit</button>
+</form>
+<div id="waitPanel" class="hidden">
+  Waiting for other players.
+</div>
+
+<div class="players">
+  <ul id="players">
+  </ul>
+</div>
+
+<%- include("partials/footer.ejs"); -%>

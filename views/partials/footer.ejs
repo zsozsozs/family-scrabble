@@ -1,0 +1,21 @@
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+<script src="js/functions.js" charset="utf-8"></script>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+  // var socket = io();
+
+  $(function () {
+    var socket = io();
+    $('form').submit(function(e){
+      e.preventDefault(); // prevents page reloading
+      socket.emit('chat message', $('#firstName').val());
+      $('#firstName').val('');
+      return false;
+    });
+    socket.on('chat message', function(msg){
+      $('ul#players').append($('<li>').text(msg));
+    });
+  });
+</script>
+</body>
+</html>

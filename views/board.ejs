@@ -1,0 +1,14 @@
+<%- include("partials/header.ejs"); -%>
+
+
+<h1>Game</h1>
+
+<%  %>
+
+<% players.forEach(function(player){ %>
+  <%= player.name%>
+  <%= player.letterStack%>
+  <hr>
+<% }); %>
+
+<%- include("partials/footer.ejs"); -%>
