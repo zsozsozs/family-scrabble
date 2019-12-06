@@ -1,23 +1,35 @@
 <%- include("partials/header.ejs"); -%>
 
-<h2>Login</h2>
 <div class="loginContainer">
+<div class="loginForm">
+  <h1>Feliratkozás</h1>
   <form class="" action="/playerLogin" method="post">
-    <label for="firstName">Name:</label><input type="text" id="firstName" name="firstName" value="">
-    <button id="playerLogin" type="submit" name="button">Submit</button>
+    <div class="form-group">
+    <label for="firstName">Név:</label><input type="text" id="firstName" name="firstName" class="form-control form-control-lg">
+    </div>
+    <div class="form-group">
+    <button id="playerLogin" type="submit" name="submitButton" class="btn btn-primary btn-lg btn-block" >Induljon a játék!</button>
+    </div>
   </form>
-  <div id="waitPanel" class="hidden">
-    Waiting for other players.
-  </div>
+
 </div>
+<div id="waitPanel" class="d-none">
+  Várakozás a többi játékosra.
+</div>
+<div class="lds-roller d-none"><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div>
 
-
-<div class="players">
+<div class="loginPlayers">
+  <h2>Játékosok</h2>
   <ul id="players">
     <% players.forEach(function(player){ %>
       <li><%= player.name %></li>
     <% }); %>
   </ul>
 </div>
+
+</div>
+
+
+
 
 <%- include("partials/footer.ejs"); -%>

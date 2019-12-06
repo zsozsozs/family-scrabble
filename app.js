@@ -81,6 +81,7 @@ io.on('connection', function(socket){
       console.log("PLAYERS after adding player: " + players.length);
       console.log("ROOM MEMBERS after adding player: " + io.sockets.adapter.rooms['family-scrabble'].length);
       if(players.length === maxPlayers && io.sockets.adapter.rooms['family-scrabble'].length === maxPlayers){
+        io.in('family-scrabble').emit('start game', "Játék indítása.");
         console.log("START GAME");
         console.log(players);
       }
