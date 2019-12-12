@@ -1,3 +1,6 @@
+# CSS files (because of less)
+*.css
+
 # Logs
 logs
 *.log

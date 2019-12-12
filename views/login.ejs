@@ -1,11 +1,13 @@
 <%- include("partials/header.ejs"); -%>
 
+<body id="login">
+
 <div class="loginContainer">
 <div class="loginForm">
   <h1>Feliratkozás</h1>
-  <form class="" action="/playerLogin" method="post">
+  <form id="loginForm" class="" action="/board" method="post">
     <div class="form-group">
-    <label for="firstName">Név:</label><input type="text" id="firstName" name="firstName" class="form-control form-control-lg">
+    <label for="firstName">Név:</label><input type="text" id="firstName" name="firstName" class="form-control form-control-lg" autocomplete="off">
     </div>
     <div class="form-group">
     <button id="playerLogin" type="submit" name="submitButton" class="btn btn-primary btn-lg btn-block" >Induljon a játék!</button>
@@ -18,7 +20,7 @@
 </div>
 <div class="lds-roller d-none"><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div>
 
-<div class="loginPlayers">
+<div class="loginPlayers d-none">
   <h2>Játékosok</h2>
   <ul id="players">
     <% players.forEach(function(player){ %>
@@ -28,8 +30,5 @@
 </div>
 
 </div>
-
-
-
 
 <%- include("partials/footer.ejs"); -%>
