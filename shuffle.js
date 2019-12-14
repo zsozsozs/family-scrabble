@@ -192,7 +192,7 @@ const letters = [{
     count: 1
   },
   {
-    letter: "joker",
+    letter: "",
     value: 0,
     count: 2
   }

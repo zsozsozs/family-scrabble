@@ -45,6 +45,7 @@ io.use(sharedSession(session, {
 // CONSTANTS and VARIABLES
 let shuffledLetters = [];
 let players = [];
+let currentTurn = 0;
 const letterStackPerPlayer = 7;
 const maxPlayers = 1;
 let gameOn = false;
@@ -73,22 +74,27 @@ io.on('connection', function(socket) {
       console.log(socket.id);
       console.log(socket.handshake.session);
       const filteredPlayerIndex = findPlayer.findPlayerFromSocketID(socket.id, players);
-      // console.log("DISCONNECTING: " + players[filteredPlayerIndex].name);
-      const loggedOutUser = {
-        index: filteredPlayerIndex,
-        name: players[filteredPlayerIndex].name
-      };
-      console.log("SESSION at disconnent");
-      console.log(socket.handshake.session);
-      console.log("OBJECT loggedOutUser: ");
-      console.log(loggedOutUser);
-      io.in('family-scrabble').emit('player logout', loggedOutUser);
-      players.splice(filteredPlayerIndex, 1);
-      io.in('family-scrabble').emit('update players', players);
-      console.log("PLAYERS AFTER REMOVING after DISCONNECT");
-      console.log(players);
-      console.log('BREAKING: user disconnected');
-      console.log("PLAYERS at disconnect: " + players.length);
+      if (filteredPlayerIndex) {
+        // console.log("DISCONNECTING: " + players[filteredPlayerIndex].name);
+        const loggedOutUser = {
+          index: filteredPlayerIndex,
+          name: players[filteredPlayerIndex].name
+        };
+        console.log("SESSION at disconnent");
+        console.log(socket.handshake.session);
+        console.log("OBJECT loggedOutUser: ");
+        console.log(loggedOutUser);
+        io.in('family-scrabble').emit('player logout', loggedOutUser);
+        players.splice(filteredPlayerIndex, 1);
+        io.in('family-scrabble').emit('update players', players);
+        console.log("PLAYERS AFTER REMOVING after DISCONNECT");
+        console.log(players);
+        console.log('BREAKING: user disconnected');
+        console.log("PLAYERS at disconnect: " + players.length);
+      } else {
+        console.log("Someone not yet added to the players array disconnected - probably a reload or closing the tab before logging in.");
+      }
+
     }
   });
 
@@ -114,9 +120,6 @@ io.on('connection', function(socket) {
         gameOn = true;
         players = [];
         shuffledLetters = shuffle.shuffleAtStart();
-        console.log("Letters");
-        console.log(shuffledLetters);
-        console.log("STARTED GAME !!!");
 
       }
     } else {
@@ -133,7 +136,7 @@ io.on('connection', function(socket) {
     console.log("ROOM members: " + room.length);
   });
 
-  socket.on('deal', function(playerName){
+  socket.on('deal', function(playerName) {
     console.log("DEAL");
     let dealing = shuffle.dealAtStartForPlayer(shuffledLetters, letterStackPerPlayer);
     let newPlayer = new Player(playerName, players.length + 1, socket.id, dealing.letterStackToBeDealt);
@@ -145,7 +148,7 @@ io.on('connection', function(socket) {
     // join game room
     socket.join("family-scrabble");
     console.log(players);
-    players.forEach(function(player){
+    players.forEach(function(player) {
       console.log("PLAYER");
       console.log(player.name + " , " + player.letterStack);
       console.log(player.letterStack);
@@ -162,6 +165,49 @@ io.on('connection', function(socket) {
     console.log(players[filteredPlayerIndex]);
     console.log(players[filteredPlayerIndex].letterStack);
     socket.emit('update letterstack', players[filteredPlayerIndex].letterStack);
+
+    console.log(players[0].name + " will start the game");
+
+    currentTurn = 1;
+    io.to(players[0].socketID).emit('start turn', 'FIRST round: your turn');
+
+    console.log(players[0].socketID + " started the game");
+  });
+
+  socket.on('place tile', function(placedTile) {
+    console.log(placedTile);
+
+    if (placedTile.action === "add") {
+      socket.to('family-scrabble').emit('get added tile', placedTile);
+    } else if (placedTile.action === "move") {
+      socket.to('family-scrabble').emit('get moved tile', placedTile);
+    } else if (placedTile.action === "remove") {
+      socket.to('family-scrabble').emit('get removed tile', placedTile);
+    }
+  });
+
+  socket.on('finish turn', function(remainingLetters) {
+    let dealtLetters = [];
+    for (var i = 0; i < letterStackPerPlayer-remainingLetters; i++) {
+      dealtLetters.push(shuffledLetters.shift());
+    }
+    console.log("Letters to be dealt:");
+    console.log(dealtLetters);
+    console.log("Remaining letters after redealing: " + shuffledLetters.length);
+    socket.emit('update letterstack', dealtLetters);
+
+    currentTurn++;
+    console.log("Shuffled letters remaining: " + shuffledLetters.length);
+    console.log(shuffledLetters);
+    console.log(socket.id + " passed his/her turn.");
+    console.log("Current turn: " + currentTurn);
+    console.log("How many players? " + players.length);
+
+    console.log("Next up: player " + (currentTurn + 1) % players.length );
+    const socketIdOfNextPlayer = players[((currentTurn + 1) % players.length)].socketID;
+    console.log("Next player: " + socketIdOfNextPlayer);
+    // sending to individual socketid (private message)
+    io.to(socketIdOfNextPlayer).emit('start turn', 'Your turn');
 
   });
 

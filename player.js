@@ -8,8 +8,13 @@ exports.findPlayerFromSocketID = function(socketID, players) {
   const filteredPlayerIndex = players.findIndex(player => player.socketID === socketID);
   // console.log("USER to remove: " + filteredPlayerIndex);
   // console.log(players[filteredPlayerIndex]);
-  return filteredPlayerIndex;
 
+  console.log("INDEX: " + filteredPlayerIndex);
 
-
+  if (filteredPlayerIndex > -1) {
+    return filteredPlayerIndex;
+  } else {
+    return false;
+  }
+  
 };
