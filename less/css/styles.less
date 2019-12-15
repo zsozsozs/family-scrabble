@@ -5,12 +5,7 @@
 
 
 // GENERAL ELEMENT --START
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
+h1, h2, h3, h4, h5, h6, p, span, label, input, button, ul, li {
   font-family: 'Roboto Slab', serif;
 }
 
@@ -134,23 +129,56 @@ button#playerLogin:active {
     background-color: #bcc0c2;
   }
 
-  &#finishTurn {
-    background-color: #407A52;
-    color: #fff;
-    border-color: #407A52;
-    border-bottom: 8px solid #006442;
-    cursor: pointer;
-    width: 100px;
 
-    &:active {
-      transform: translate(0px,8px);
-      -webkit-transform: translate(0px,8px);
-      -moz-transform:translate(0px, 8px);
-      -ms-transform:translate(0px, 8px);
-      -o-transform:translate(0px, 8px);
-      border-bottom: 1px solid;
-      margin-bottom: -8px;
+    &#swapLetters {
+      background-color: #345feb;
+      color: #fff;
+      border-color: #345feb;
+      border-bottom: 8px solid #132d85;
+      cursor: pointer;
+      width: 100px;
+      margin-right: 20px;
+
+      &:active {
+        transform: translate(0px,8px);
+        -webkit-transform: translate(0px,8px);
+        -moz-transform:translate(0px, 8px);
+        -ms-transform:translate(0px, 8px);
+        -o-transform:translate(0px, 8px);
+        border-bottom: 1px solid;
+        margin-bottom: -8px;
+      }
+
+      &:disabled {
+        cursor: not-allowed;
+      }
+
+      img {
+        height: 1rem;
+        margin-left: 5px;
+        margin-top: -4px;
+      }
+
     }
+
+
+    &#finishTurn {
+      background-color: #407A52;
+      color: #fff;
+      border-color: #407A52;
+      border-bottom: 8px solid #006442;
+      cursor: pointer;
+      width: 100px;
+
+      &:active {
+        transform: translate(0px,8px);
+        -webkit-transform: translate(0px,8px);
+        -moz-transform:translate(0px, 8px);
+        -ms-transform:translate(0px, 8px);
+        -o-transform:translate(0px, 8px);
+        border-bottom: 1px solid;
+        margin-bottom: -8px;
+      }
 
   }
 
@@ -198,16 +226,35 @@ button#playerLogin:active {
       background-color: #84cfe8;
     }
 
+    //   &.val-l-2:after {
+    //    content: '';
+    //    display: inline-block;
+    //    width: 15px;
+    //    height: 15px;
+    //    -moz-border-radius: 7.5px;
+    //    -webkit-border-radius: 7.5px;
+    //    border-radius: 7.5px;
+    //    background-color: #84cfe8;
+    //    z-index: 99;
+    // position: absolute;
+    // margin-left: -20px;
+    // margin-top: 5px;
+    // }
+
     &.val-l-3 {
       background-color: #0c83ab;
     }
 
-    &.val-w-2, &.center {
+    &.val-w-2 {
       background-color: #e8b38b;
     }
 
     &.val-w-3 {
       background-color: #c2250a;
+    }
+
+    &.center {
+      background-color: #ebc634;
     }
 
     button.tile {

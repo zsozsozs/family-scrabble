@@ -47,7 +47,7 @@ let shuffledLetters = [];
 let players = [];
 let currentTurn = 0;
 const letterStackPerPlayer = 7;
-const maxPlayers = 1;
+const maxPlayers = 2;
 let gameOn = false;
 
 // Listen on port 3000.
@@ -185,6 +185,33 @@ io.on('connection', function(socket) {
       socket.to('family-scrabble').emit('get removed tile', placedTile);
     }
   });
+
+    socket.on('swapping letters', function(swappedLetters) {
+      console.log("SWAPPING LETTERS");
+      console.log(swappedLetters);
+console.log("BEFORE SWAPPING: ");
+console.log("Swapped letters: " + swappedLetters.length);
+console.log("Shuffled letters: " + shuffledLetters.length);
+
+swappedLetters.forEach(function(letter, index){
+console.log("Swapped letters in loop: " + swappedLetters.length);
+console.log("Current letter: " + swappedLetters[0].letter);
+posOfAddedLetter = Math.floor(Math.random() * shuffledLetters.length);
+shuffledLetters.splice(posOfAddedLetter, 0, swappedLetters[index]);
+console.log("Remaining swapped in loop: ");
+console.log(swappedLetters);
+});
+//empty array
+swappedLetters = [];
+console.log("AFTER SWAPPING: ");
+console.log("Swapped letters: " + swappedLetters.length);
+console.log("Shuffled letters: " + shuffledLetters.length);
+console.log(swappedLetters);
+
+
+
+
+    });
 
   socket.on('finish turn', function(remainingLetters) {
     let dealtLetters = [];
