@@ -119,6 +119,7 @@ io.on('connection', function(socket) {
         console.log(players);
         gameOn = true;
         players = [];
+
         shuffledLetters = shuffle.shuffleAtStart();
 
       }
@@ -147,13 +148,6 @@ io.on('connection', function(socket) {
     players.push(newPlayer);
     // join game room
     socket.join("family-scrabble");
-    console.log(players);
-    players.forEach(function(player) {
-      console.log("PLAYER");
-      console.log(player.name + " , " + player.letterStack);
-      console.log(player.letterStack);
-    });
-    // const filteredPlayerIndex = findPlayer.findPlayerFromSocketID(socket.id, players);
 
     console.log("Players after dealing letters");
     console.log(players);
@@ -161,9 +155,21 @@ io.on('connection', function(socket) {
 
     //find player based on socket id
     const filteredPlayerIndex = findPlayer.findPlayerFromSocketID(socket.id, players);
+
+
+
     console.log("Filtered player index for updating letters: " + filteredPlayerIndex);
     console.log(players[filteredPlayerIndex]);
     console.log(players[filteredPlayerIndex].letterStack);
+
+    if (filteredPlayerIndex === (maxPlayers-1)) {
+      players.forEach(function(player){
+              console.log(player.name + " , " + player.letterStack);
+        io.emit("show other players", player.name);
+        io.emit('show whose turn', 1);
+      });
+    }
+
     socket.emit('update letterstack', players[filteredPlayerIndex].letterStack);
 
     console.log(players[0].name + " will start the game");
@@ -207,10 +213,6 @@ console.log("AFTER SWAPPING: ");
 console.log("Swapped letters: " + swappedLetters.length);
 console.log("Shuffled letters: " + shuffledLetters.length);
 console.log(swappedLetters);
-
-
-
-
     });
 
   socket.on('finish turn', function(remainingLetters) {
@@ -231,10 +233,12 @@ console.log(swappedLetters);
     console.log("How many players? " + players.length);
 
     console.log("Next up: player " + (currentTurn + 1) % players.length );
-    const socketIdOfNextPlayer = players[((currentTurn + 1) % players.length)].socketID;
+    let nextPlayerID = (currentTurn + 1) % players.length;
+    const socketIdOfNextPlayer = players[nextPlayerID].socketID;
     console.log("Next player: " + socketIdOfNextPlayer);
     // sending to individual socketid (private message)
     io.to(socketIdOfNextPlayer).emit('start turn', 'Your turn');
+    io.emit('show whose turn', (nextPlayerID+1));
 
   });
 

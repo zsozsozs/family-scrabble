@@ -1,21 +1,38 @@
 // Variables
 @button-light: #3498DB; // login view
 @button-dark: #2980B9; // login view
-@tileSize: 50px;
+@tileSize: 40px;
 
+html {
+  font-size: 62.5%;
+}
 
 // GENERAL ELEMENT --START
-h1, h2, h3, h4, h5, h6, p, span, label, input, button, ul, li {
+h1, h2, h3, h4, h5, h6, span, label, input, button{
   font-family: 'Roboto Slab', serif;
 }
 
+ul, li, p{
+  font-family: 'Raleway', sans-serif;
+}
+
 body {
+  font-size: 2rem;
   font-family: 'Raleway', sans-serif;
   background: url("../img/bg.jpg") no-repeat center center fixed;
   -webkit-background-size: cover;
   -moz-background-size: cover;
   -o-background-size: cover;
   background-size: cover;
+}
+
+h1 {
+  font-size: 2.5rem;
+  margin-bottom: 30px;
+}
+
+input#firstName {
+  font-size: 2rem;
 }
 
 ul {
@@ -60,17 +77,46 @@ button:focus, button:active {
 
 // BOARD VIEW --START
 
-#board .container, #board .container-fluid {
+#board .container-fluid {
   text-align: center;
+  padding: 50px;
 }
 
-#board #playerName {
-  color: #fff;
-  font-size: 24px;
+#board .controlBar > div {
+  margin-bottom: 25px;
+  padding-bottom: 25px;
+  border-bottom: 1px solid white;
+
+  &:last-child {
+    border-bottom: none;
+    margin-bottom: none;
+  }
+
+}
+
+#board h2 {
   font-weight: bold;
   display: block;
   margin-bottom: 2rem;
 }
+
+#board .otherPlayers  {
+
+  span {
+    padding: 0 15px;
+    font-size: 1.6rem;
+  }
+
+  .current {
+    border-bottom: 2px solid black;
+  }
+}
+
+#board .controls {
+  min-height: (@tileSize+20);
+}
+
+
 
 button#playerLogin {
   transition: all 0.1s;
@@ -80,7 +126,7 @@ button#playerLogin {
   margin: 0 10px 10px 0;
   float: left;
   border-radius: 10px;
-  font-size: 25px;
+  font-size: 2.5rem;
   color: #FFF;
   text-decoration: none;
   background-color: @button-light;
@@ -100,6 +146,8 @@ button#playerLogin:active {
 #board button.tile {
   height: @tileSize;
   width: @tileSize;
+  font-size: (@tileSize/3);
+  font-weight: bold;
   border-radius: 5px;
   border-bottom: 8px solid #9ca5ad;
   text-transform: uppercase;
@@ -138,6 +186,7 @@ button#playerLogin:active {
       cursor: pointer;
       width: 100px;
       margin-right: 20px;
+      font-size: 1.6rem;
 
       &:active {
         transform: translate(0px,8px);
@@ -154,7 +203,7 @@ button#playerLogin:active {
       }
 
       img {
-        height: 1rem;
+        height: 1.6rem;
         margin-left: 5px;
         margin-top: -4px;
       }
@@ -169,6 +218,7 @@ button#playerLogin:active {
       border-bottom: 8px solid #006442;
       cursor: pointer;
       width: 100px;
+      font-size: 1.6rem;
 
       &:active {
         transform: translate(0px,8px);
@@ -191,7 +241,7 @@ button#playerLogin:active {
 .letterStack {
   margin-bottom: 20px;
   display: inline-grid;
-  grid-template-columns: repeat(7, 66px);
+  grid-template-columns: repeat(7, (@tileSize+16));
   grid-gap: 5px;
 
   .cell {
@@ -206,6 +256,8 @@ button#playerLogin:active {
   height: (@tileSize+40);
 }
 
+
+
 .scrabbleBoard {
   display: inline-grid;
   grid-template-columns: repeat(15, @tileSize);
@@ -213,7 +265,7 @@ button#playerLogin:active {
   grid-gap: 5px;
   background-color: #fff;
   color: #444;
-  margin-bottom: 100px;
+  // margin-bottom: 100px;
   padding: 20px;
 
   .cell {
@@ -225,21 +277,6 @@ button#playerLogin:active {
     &.val-l-2 {
       background-color: #84cfe8;
     }
-
-    //   &.val-l-2:after {
-    //    content: '';
-    //    display: inline-block;
-    //    width: 15px;
-    //    height: 15px;
-    //    -moz-border-radius: 7.5px;
-    //    -webkit-border-radius: 7.5px;
-    //    border-radius: 7.5px;
-    //    background-color: #84cfe8;
-    //    z-index: 99;
-    // position: absolute;
-    // margin-left: -20px;
-    // margin-top: 5px;
-    // }
 
     &.val-l-3 {
       background-color: #0c83ab;
@@ -263,6 +300,26 @@ button#playerLogin:active {
 
     }
   }
+}
+
+.legend {
+
+  .item span {
+display: inline-block;
+line-height: @tileSize;
+vertical-align: top;
+font-size: 1.6rem;
+  }
+
+.cell {
+  &:extend(.scrabbleBoard .cell all);
+  display: inline-block;
+  width: @tileSize;
+  height: @tileSize;
+  margin-right: 30px;
+
+}
+
 }
 
 // BOARD VIEW --START

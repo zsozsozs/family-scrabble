@@ -12,6 +12,7 @@ $(window).on('load', function(e) {
 
   // BOARD view
   if ($('#board').length > 0) {
+    console.log("TRIGGER DEALING");
     var playerName = $("#playerName").text();
     socket.emit('deal', playerName);
   }
@@ -32,10 +33,10 @@ $("#loginForm").submit(function(event) {
   }
 });
 
-socket.on("sessiondata", function(data) {
-  console.info("sessiondata event received. Check the console");
-  console.info("sessiondata is ", data);
-});
+// socket.on("sessiondata", function(data) {
+//   console.info("sessiondata event received. Check the console");
+//   console.info("sessiondata is ", data);
+// });
 
 socket.on('player login', function(username) {
   $('.loginContainer #waitPanel').empty();
@@ -80,8 +81,6 @@ socket.on('update letterstack', function(letters) {
     console.log(letter);
 
     $(".letterStack .cell").each(function(cell){
-      console.log("data-pos atribute value: " + $(this).attr("data-pos"));
-      console.log("cell has so many children: " + $(this).children().length);
         if ($(this).children().length === 0) {
           console.log("0 children");
           $(this).append('<button type="button" class="tile" data-letter="' + letter.letter + '" data-value="' + letter.value + '">' + letter.letter + '<sub>' + letter.value + '</sub></button>');
@@ -311,4 +310,18 @@ if($("#swapLetters").prop("disabled")){
     $("#swapLetters").prop( "disabled", false );
 }
 $("#finishTurn").removeClass("d-none");
+});
+
+socket.on('show other players', function(playerName) {
+  console.log("Player: " + playerName);
+$(".otherPlayers").append("<span>" + playerName + "</span>");
+});
+
+socket.on('show whose turn', function(nextPlayerIndex) {
+  console.log("Whose turn? " + nextPlayerIndex);
+  $(".otherPlayers").children("span").each(function() {
+    $(this).removeClass("current");
+  });
+  $(".otherPlayers").children("span:nth-of-type(" + nextPlayerIndex + ")").addClass("current");
+
 });
