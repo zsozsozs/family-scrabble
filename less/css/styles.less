@@ -116,7 +116,9 @@ button:focus, button:active {
   min-height: (@tileSize+20);
 }
 
-
+#board .finishGame {
+  min-height: (@tileSize+40);
+}
 
 button#playerLogin {
   transition: all 0.1s;
@@ -232,6 +234,27 @@ button#playerLogin:active {
 
   }
 
+  &#finishGame {
+    background-color: #9e0505;
+    color: #fff;
+    border-color: #9e0505;
+    border-bottom: 8px solid #690202;
+    cursor: pointer;
+    width: 100px;
+    font-size: 1.6rem;
+
+    &:active {
+      transform: translate(0px,8px);
+      -webkit-transform: translate(0px,8px);
+      -moz-transform:translate(0px, 8px);
+      -ms-transform:translate(0px, 8px);
+      -o-transform:translate(0px, 8px);
+      border-bottom: 1px solid;
+      margin-bottom: -8px;
+    }
+
+}
+
   sub {
     bottom: -5px;
     left: 5px;
@@ -291,7 +314,8 @@ button#playerLogin:active {
     }
 
     &.center {
-      background-color: #ebc634;
+      // background-color: #ebc634;
+
     }
 
     button.tile {

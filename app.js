@@ -47,7 +47,7 @@ let shuffledLetters = [];
 let players = [];
 let currentTurn = 0;
 const letterStackPerPlayer = 7;
-const maxPlayers = 2;
+const maxPlayers = 1;
 let gameOn = false;
 
 // Listen on port 3000.
@@ -162,22 +162,29 @@ io.on('connection', function(socket) {
     console.log(players[filteredPlayerIndex]);
     console.log(players[filteredPlayerIndex].letterStack);
 
+    // do this when the last player gets dealt
     if (filteredPlayerIndex === (maxPlayers-1)) {
+      console.log("PLAYER INDEX in iF: " + filteredPlayerIndex);
       players.forEach(function(player){
               console.log(player.name + " , " + player.letterStack);
         io.emit("show other players", player.name);
-        io.emit('show whose turn', 1);
+        console.log("Show remaining letters 1: " + shuffledLetters.length);
       });
+
+        //first player should start the game when last player is in
+        console.log(players[0].name + " will start the game");
+        currentTurn = 1;
+        io.to(players[0].socketID).emit('start turn', 'FIRST round: your turn');
+        console.log(players[0].socketID + " started the game");
+
+        io.emit('update remaining letters', shuffledLetters.length);
+        io.emit('show whose turn', 1);
+
     }
 
     socket.emit('update letterstack', players[filteredPlayerIndex].letterStack);
 
-    console.log(players[0].name + " will start the game");
 
-    currentTurn = 1;
-    io.to(players[0].socketID).emit('start turn', 'FIRST round: your turn');
-
-    console.log(players[0].socketID + " started the game");
   });
 
   socket.on('place tile', function(placedTile) {
@@ -217,13 +224,22 @@ console.log(swappedLetters);
 
   socket.on('finish turn', function(remainingLetters) {
     let dealtLetters = [];
+    console.log("FINISHING TURN");
     for (var i = 0; i < letterStackPerPlayer-remainingLetters; i++) {
-      dealtLetters.push(shuffledLetters.shift());
+      if (shuffledLetters.length > 0) {
+        console.log(shuffledLetters.length + " letters remaining.");
+        dealtLetters.push(shuffledLetters.shift());
+      } else {
+        console.log("0 letters left.");
+        break;
+      }
     }
     console.log("Letters to be dealt:");
     console.log(dealtLetters);
     console.log("Remaining letters after redealing: " + shuffledLetters.length);
     socket.emit('update letterstack', dealtLetters);
+    console.log("Show remaining letters 2: " + shuffledLetters.length);
+    io.emit('update remaining letters', shuffledLetters.length);
 
     currentTurn++;
     console.log("Shuffled letters remaining: " + shuffledLetters.length);

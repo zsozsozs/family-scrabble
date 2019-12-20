@@ -11,9 +11,9 @@
 
 
       <div class="col-lg-4 controlBar">
-        <h1>Scrabble</h1>
         <div class="otherPlayers">
           <h2>Sorrend</h2>
+
         </div>
         <div class="currentPlayer">
           <h2 id="playerName">
@@ -31,6 +31,9 @@
             <button type="button" id="finishTurn" class="tile fixed d-none">Küldés</button>
           </div>
         </div>
+        <div class="remainingLetters">
+          <p>Maradék betűk: <span id="remainingLetters"></span></p>
+        </div>
         <div class="legend">
           <h2>Jelmagyarázat</h2>
           <div class="item">
@@ -46,6 +49,9 @@
           <div class="item">
             <div class="cell val-w-3"></div><span>Háromszoros szóérték</span>
           </div>
+        </div>
+        <div class="finishGame">
+          <button type="button" id="finishGame" class="tile fixed">Befejezés</button>
         </div>
       </div>
       <div class=" col-lg-8">
@@ -170,7 +176,7 @@
           <div class="cell cell-8-5 r-8 c-5" data-pos="8-5"></div>
           <div class="cell cell-8-6 r-8 c-6" data-pos="8-6"></div>
           <div class="cell cell-8-7 r-8 c-7" data-pos="8-7"></div>
-          <div class="cell cell-8-8 r-8 c-8 center" data-pos="8-8"></div>
+          <div class="cell cell-8-8 r-8 c-8 val-w-2 center" data-pos="8-8" data-val-w=2""></div>
           <div class="cell cell-8-9 r-8 c-9" data-pos="8-9"></div>
           <div class="cell cell-8-10 r-8 c-10" data-pos="8-10"></div>
           <div class="cell cell-8-11 r-8 c-11" data-pos="8-11"></div>

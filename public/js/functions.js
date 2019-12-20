@@ -82,7 +82,6 @@ socket.on('update letterstack', function(letters) {
 
     $(".letterStack .cell").each(function(cell){
         if ($(this).children().length === 0) {
-          console.log("0 children");
           $(this).append('<button type="button" class="tile" data-letter="' + letter.letter + '" data-value="' + letter.value + '">' + letter.letter + '<sub>' + letter.value + '</sub></button>');
           $(this).addClass("taken");
           return false;
@@ -93,6 +92,11 @@ socket.on('update letterstack', function(letters) {
   });
 
 });
+
+socket.on('update remaining letters', function(number) {
+console.log("Remaining letters: " + number);
+$("#remainingLetters").text(number);
+ });
 
 $(".cell").on("click", "button.tile", function(event) {
   console.log("Swap mode: " + swapMode);
@@ -324,4 +328,8 @@ socket.on('show whose turn', function(nextPlayerIndex) {
   });
   $(".otherPlayers").children("span:nth-of-type(" + nextPlayerIndex + ")").addClass("current");
 
+});
+
+$("#finishGame").on("click", function() {
+  console.log("Finish game");
 });
