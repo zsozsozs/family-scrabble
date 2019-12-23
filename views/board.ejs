@@ -52,6 +52,11 @@
         </div>
         <div class="finishGame">
           <button type="button" id="finishGame" class="tile fixed">Befejezés</button>
+          <div class="confirmFinishGame d-none">
+            <p>Biztos?</p>
+            <button type="button" id="noFinishGame" class="tile fixed">Nem</button>
+            <button type="button" id="yesFinishGame" class="tile fixed">Igen</button>
+          </div>
         </div>
       </div>
       <div class=" col-lg-8">
@@ -303,6 +308,27 @@
 
     </div>
   </div>
+
+
+  <!-- Modal -->
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title">Játék vége</h2>
+<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+  <span aria-hidden="true">&times;</span>
+      </div>
+      <div class="modal-body">
+        <p class="gameEndPlayer"><span id="gameEndPlayerName"></span> véget vetett a játéknak.</p>
+        <p>A modál bezárásával átirányítunk a kezdőoldalra.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="tile fixed" data-dismiss="modal">Vettem az adást</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 
   <%- include("partials/footer.ejs"); -%>

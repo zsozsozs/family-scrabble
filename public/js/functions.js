@@ -3,6 +3,7 @@ const socket = io();
 let gameOn = false;
 let yourTurn = false;
 let swapMode = false;
+let currentPlayerName;
 
 $(window).on('load', function(e) {
   // LOGIN view
@@ -13,8 +14,8 @@ $(window).on('load', function(e) {
   // BOARD view
   if ($('#board').length > 0) {
     console.log("TRIGGER DEALING");
-    var playerName = $("#playerName").text();
-    socket.emit('deal', playerName);
+    currentPlayerName = $("#playerName").text().trim();
+    socket.emit('deal', currentPlayerName);
   }
 
 });
@@ -29,7 +30,8 @@ $("#loginForm").submit(function(event) {
     $(".loginContainer form").addClass("d-none");
     $(".loginContainer #waitPanel").removeClass("d-none");
     $(".loginContainer .lds-roller").removeClass("d-none");
-    socket.emit('player login', $('#firstName').val());
+    playerName = $('#firstName').val();
+    socket.emit('player login', playerName);
   }
 });
 
@@ -331,5 +333,53 @@ socket.on('show whose turn', function(nextPlayerIndex) {
 });
 
 $("#finishGame").on("click", function() {
-  console.log("Finish game");
+  $('.confirmFinishGame').removeClass("d-none");
+});
+
+$("#noFinishGame").on("click", function() {
+  $('.confirmFinishGame').addClass("d-none");
+});
+
+$("#yesFinishGame").on("click", function() {
+  console.log("Finish game by " + currentPlayerName);
+  // gameOn = false;
+  // yourTurn = false;
+  // swapMode = false;
+  // currentPlayerName = "";
+  console.log("Current player after end of game: " + currentPlayerName);  socket.emit('finish game', currentPlayerName);
+});
+
+// socket.on('end of game', function() {
+//   console.log("end of game - triggered");
+//   $('#myModal').modal('show');
+// });
+
+socket.on('game ended', function(gameEndPlayerName) {
+  console.log("game ended");
+  $('#myModal').modal({
+  backdrop: 'static'
+});
+$('#myModal').modal('show');
+  if (gameEndPlayerName === "self") {
+    $(".gameEndPlayer").remove();
+  } else {
+    $('#gameEndPlayerName').text(gameEndPlayerName);
+  }
+
+});
+
+function redirectToHome(){
+  var re = new RegExp(/^.*\//);
+baseURL = re.exec(window.location.href);
+window.location.href = baseURL;
+}
+
+$("#myModal button").on("click", function(event){
+  event.preventDefault();
+  redirectToHome();
+});
+
+$('#myModal').on('hidden.bs.modal', function (e) {
+  event.preventDefault();
+  redirectToHome();
 });

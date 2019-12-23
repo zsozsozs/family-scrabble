@@ -6,14 +6,29 @@
 html {
   font-size: 62.5%;
 }
-
 // GENERAL ELEMENT --START
-h1, h2, h3, h4, h5, h6, span, label, input, button{
+
+button,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+input,
+label {
   font-family: 'Roboto Slab', serif;
 }
 
-ul, li, p{
+li,
+p,
+span,
+ul {
   font-family: 'Raleway', sans-serif;
+}
+
+p {
+  // font-size: 2rem;
 }
 
 body {
@@ -47,14 +62,12 @@ button {
   transition: all 0.2s ease-in-out;
 }
 
-button:focus, button:active {
+button:active,
+button:focus {
   outline: none;
   // box-shadow: 0 5px 15px rgba(145, 92, 182, .4);
 }
-
 // GENERAL ELEMENT --END
-
-
 // LOGIN VIEW --START
 .loginContainer {
   background-color: white;
@@ -72,11 +85,8 @@ button:focus, button:active {
 .loginContainer .loginForm input {
   text-align: center;
 }
-
 // LOGIN VIEW --END
-
 // BOARD VIEW --START
-
 #board .container-fluid {
   text-align: center;
   padding: 50px;
@@ -91,7 +101,6 @@ button:focus, button:active {
     border-bottom: none;
     margin-bottom: none;
   }
-
 }
 
 #board h2 {
@@ -100,11 +109,10 @@ button:focus, button:active {
   margin-bottom: 2rem;
 }
 
-#board .otherPlayers  {
-
+#board .otherPlayers {
   span {
     padding: 0 15px;
-    font-size: 1.6rem;
+    // font-size: 1.6rem;
   }
 
   .current {
@@ -116,8 +124,16 @@ button:focus, button:active {
   min-height: (@tileSize+20);
 }
 
+#board span#remainingLetters {
+  font-weight: bold;
+}
+
 #board .finishGame {
   min-height: (@tileSize+40);
+
+  p {
+    margin-top: 20px;
+  }
 }
 
 button#playerLogin {
@@ -139,9 +155,9 @@ button#playerLogin {
 button#playerLogin:active {
   transform: translate(0px,8px);
   -webkit-transform: translate(0px,8px);
-  -moz-transform:translate(0px, 8px);
-  -ms-transform:translate(0px, 8px);
-  -o-transform:translate(0px, 8px);
+  -moz-transform: translate(0px, 8px);
+  -ms-transform: translate(0px, 8px);
+  -o-transform: translate(0px, 8px);
   border-bottom: 1px solid;
 }
 
@@ -156,17 +172,26 @@ button#playerLogin:active {
   box-sizing: content-box;
   background-color: #ffffff;
   box-shadow: 2px 2px 5px rgba(0,0,0,0.5), 10px 10px 15px rgba(0,0,0,0.5), -1px -1px 30px rgba(0,0,0,0.2);
-      outline: none;
+  outline: none;
+
+  &:active {
+    transform: translate(0px,8px);
+    -webkit-transform: translate(0px,8px);
+    -moz-transform: translate(0px, 8px);
+    -ms-transform: translate(0px, 8px);
+    -o-transform: translate(0px, 8px);
+    border-bottom: 1px solid;
+    margin-bottom: -8px;
+  }
 
   &.focused {
     transition: all 0.1s;
     -webkit-transition: all 0.1s;
-    // background-color: red;
     transform: translate(0px,-10px);
     -webkit-transform: translate(0px,-10px);
-    -moz-transform:translate(0px, -10px);
-    -ms-transform:translate(0px, -10px);
-    -o-transform:translate(0px, -10px);
+    -moz-transform: translate(0px, -10px);
+    -ms-transform: translate(0px, -10px);
+    -o-transform: translate(0px, -10px);
     border-bottom: 8px solid #9ca5ad;
   }
 
@@ -179,59 +204,55 @@ button#playerLogin:active {
     background-color: #bcc0c2;
   }
 
+  &#swapLetters {
+    background-color: #345feb;
+    color: #fff;
+    border-color: #345feb;
+    border-bottom: 8px solid #132d85;
+    cursor: pointer;
+    width: 100px;
+    margin-right: 20px;
+    font-size: 1.6rem;
 
-    &#swapLetters {
-      background-color: #345feb;
-      color: #fff;
-      border-color: #345feb;
-      border-bottom: 8px solid #132d85;
-      cursor: pointer;
-      width: 100px;
-      margin-right: 20px;
-      font-size: 1.6rem;
-
-      &:active {
-        transform: translate(0px,8px);
-        -webkit-transform: translate(0px,8px);
-        -moz-transform:translate(0px, 8px);
-        -ms-transform:translate(0px, 8px);
-        -o-transform:translate(0px, 8px);
-        border-bottom: 1px solid;
-        margin-bottom: -8px;
-      }
-
-      &:disabled {
-        cursor: not-allowed;
-      }
-
-      img {
-        height: 1.6rem;
-        margin-left: 5px;
-        margin-top: -4px;
-      }
-
+    &:active {
+      transform: translate(0px,8px);
+      -webkit-transform: translate(0px,8px);
+      -moz-transform: translate(0px, 8px);
+      -ms-transform: translate(0px, 8px);
+      -o-transform: translate(0px, 8px);
+      border-bottom: 1px solid;
+      margin-bottom: -8px;
     }
 
+    &:disabled {
+      cursor: not-allowed;
+    }
 
-    &#finishTurn {
-      background-color: #407A52;
-      color: #fff;
-      border-color: #407A52;
-      border-bottom: 8px solid #006442;
-      cursor: pointer;
-      width: 100px;
-      font-size: 1.6rem;
+    img {
+      height: 1.6rem;
+      margin-left: 5px;
+      margin-top: -4px;
+    }
+  }
 
-      &:active {
-        transform: translate(0px,8px);
-        -webkit-transform: translate(0px,8px);
-        -moz-transform:translate(0px, 8px);
-        -ms-transform:translate(0px, 8px);
-        -o-transform:translate(0px, 8px);
-        border-bottom: 1px solid;
-        margin-bottom: -8px;
-      }
+  &#finishTurn {
+    background-color: #407A52;
+    color: #fff;
+    border-color: #407A52;
+    border-bottom: 8px solid #006442;
+    cursor: pointer;
+    width: 100px;
+    font-size: 1.6rem;
 
+    &:active {
+      transform: translate(0px,8px);
+      -webkit-transform: translate(0px,8px);
+      -moz-transform: translate(0px, 8px);
+      -ms-transform: translate(0px, 8px);
+      -o-transform: translate(0px, 8px);
+      border-bottom: 1px solid;
+      margin-bottom: -8px;
+    }
   }
 
   &#finishGame {
@@ -246,14 +267,24 @@ button#playerLogin:active {
     &:active {
       transform: translate(0px,8px);
       -webkit-transform: translate(0px,8px);
-      -moz-transform:translate(0px, 8px);
-      -ms-transform:translate(0px, 8px);
-      -o-transform:translate(0px, 8px);
+      -moz-transform: translate(0px, 8px);
+      -ms-transform: translate(0px, 8px);
+      -o-transform: translate(0px, 8px);
       border-bottom: 1px solid;
       margin-bottom: -8px;
     }
+  }
 
-}
+  &#yesFinishGame {
+    &:extend(#board button.tile#finishGame all);
+    width: auto;
+  }
+
+  &#noFinishGame {
+    &:extend(#board button.tile#finishTurn all);
+    width: auto;
+    margin-right: 1rem;
+  }
 
   sub {
     bottom: -5px;
@@ -278,8 +309,6 @@ button#playerLogin:active {
 .finishTurnButton {
   height: (@tileSize+40);
 }
-
-
 
 .scrabbleBoard {
   display: inline-grid;
@@ -315,42 +344,72 @@ button#playerLogin:active {
 
     &.center {
       // background-color: #ebc634;
-
     }
 
     button.tile {
       border-bottom: none !important;
       box-sizing: border-box !important;
-
     }
   }
 }
 
 .legend {
-
   .item span {
-display: inline-block;
-line-height: @tileSize;
-vertical-align: top;
-font-size: 1.6rem;
+    display: inline-block;
+    line-height: @tileSize;
+    vertical-align: top; // font-size: 1.6rem;
   }
 
-.cell {
-  &:extend(.scrabbleBoard .cell all);
-  display: inline-block;
-  width: @tileSize;
-  height: @tileSize;
-  margin-right: 30px;
-
+  .cell {
+    &:extend(.scrabbleBoard .cell all);
+    display: inline-block;
+    width: @tileSize;
+    height: @tileSize;
+    margin-right: 30px;
+  }
 }
 
-}
+.modal {
+  .modal-dialog {
+    @media (min-width: 576px) {
+      max-width: 550px;
+    }
+  }
 
+  .modal-content {
+    padding: 20px;
+    padding-bottom: 12px;
+  }
+
+  .modal-header {
+    border: 0;
+    .close span {
+      font-size: 2rem;
+    }
+
+  }
+
+  .modal-footer {
+    border: 0;
+    min-height: (@tileSize+40);
+
+    button.tile {
+      &:extend(#board button.tile all);
+      width: auto !important;
+
+      &:hover {
+        cursor: pointer !important;
+      }
+    }
+
+  }
+}
 // BOARD VIEW --START
 
 //  --- EFFECTS ---
 
 // FADE-IN --START
+
 body {
   animation: fadein 2s;
   -moz-animation: fadein 2s;
@@ -400,8 +459,8 @@ body {
   }
 }
 // FADE-IN --END
-
 // LOADER (for login view) --START
+
 .lds-roller {
   display: inline-block;
   position: relative;

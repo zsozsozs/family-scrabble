@@ -47,7 +47,7 @@ let shuffledLetters = [];
 let players = [];
 let currentTurn = 0;
 const letterStackPerPlayer = 7;
-const maxPlayers = 1;
+const maxPlayers = 2;
 let gameOn = false;
 
 // Listen on port 3000.
@@ -255,6 +255,22 @@ console.log(swappedLetters);
     // sending to individual socketid (private message)
     io.to(socketIdOfNextPlayer).emit('start turn', 'Your turn');
     io.emit('show whose turn', (nextPlayerID+1));
+
+  });
+
+  socket.on('finish game', function(playerName) {
+    console.log(playerName + " is initiating finishing the game.");
+
+    // reset variables
+    shuffledLetters = [];
+    players = [];
+    currentTurn = 0;
+    let gameOn = false;
+
+    // to everyone but the initiator
+    socket.broadcast.emit('game ended', playerName);
+    // to initiator
+    socket.emit('game ended', "self");
 
   });
 
