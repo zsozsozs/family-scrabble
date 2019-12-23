@@ -43,6 +43,12 @@ server.listen(3000, function(req, res) {
 });
 
 io.on('connection', function(socket) {
+
+  if (gameOn) {
+    console.log("GAME ON");
+  } else {
+    console.log("GAME OFF");
+  }
   console.log("SOCKETS at connection start:");
   console.log(io.sockets.adapter.rooms['family-scrabble']);
   console.log('BREAKING: a user connected');
@@ -58,7 +64,7 @@ io.on('connection', function(socket) {
       console.log(socket.id);
       const filteredPlayerIndex = findPlayer.findPlayerFromSocketID(socket.id, players);
       console.log("Index when gameOn false: " + filteredPlayerIndex);
-      if (filteredPlayerIndex > -1) {
+      if (filteredPlayerIndex) {
         // console.log("DISCONNECTING: " + players[filteredPlayerIndex].name);
         const loggedOutUser = {
           index: filteredPlayerIndex,
@@ -270,7 +276,7 @@ console.log(swappedLetters);
 
 
     let  newEndGameAction = new EndGameAction("endgame", playerName);
-    console.log(endGameAction);
+    console.log(newEndGameAction);
 
     // to everyone but the initiator
     socket.broadcast.emit('game ended', newEndGameAction);

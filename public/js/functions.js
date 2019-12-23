@@ -362,7 +362,7 @@ $(".logoutPlayer").removeClass("d-none");
 else if (endGameAction.action === "endgame") {
   if (endGameAction.initiatorName === "self") {
   } else {
-    $('#gameEndPlayerName').text(gameEndPlayerName);
+    $('#gameEndPlayerName').text(endGameAction.initiatorName);
     $(".gameEndPlayer").removeClass("d-none");
   }
 }
