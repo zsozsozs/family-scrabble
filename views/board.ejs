@@ -311,7 +311,7 @@
 
 
   <!-- Modal -->
-<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+<div class="modal fade" id="gameEndModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
       <div class="modal-header">
@@ -320,7 +320,8 @@
   <span aria-hidden="true">&times;</span>
       </div>
       <div class="modal-body">
-        <p class="gameEndPlayer"><span id="gameEndPlayerName"></span> véget vetett a játéknak.</p>
+        <p class="logoutPlayer d-none"><span id="logoutPlayerName"></span> kijelentkezett, így a játéknak sajnos vége.</p>
+        <p class="gameEndPlayer d-none"><span id="gameEndPlayerName"></span> véget vetett a játéknak.</p>
         <p>A modál bezárásával átirányítunk a kezdőoldalra.</p>
       </div>
       <div class="modal-footer">

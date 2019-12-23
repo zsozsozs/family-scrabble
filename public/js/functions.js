@@ -349,22 +349,25 @@ $("#yesFinishGame").on("click", function() {
   console.log("Current player after end of game: " + currentPlayerName);  socket.emit('finish game', currentPlayerName);
 });
 
-// socket.on('end of game', function() {
-//   console.log("end of game - triggered");
-//   $('#myModal').modal('show');
-// });
-
-socket.on('game ended', function(gameEndPlayerName) {
+socket.on('game ended', function(endGameAction) {
   console.log("game ended");
-  $('#myModal').modal({
+  $('#gameEndModal').modal({
   backdrop: 'static'
 });
-$('#myModal').modal('show');
-  if (gameEndPlayerName === "self") {
-    $(".gameEndPlayer").remove();
+$('#gameEndModal').modal('show');
+if (endGameAction.action === "logout") {
+  $('#logoutPlayerName').text(endGameAction.initiatorName);
+$(".logoutPlayer").removeClass("d-none");
+}
+else if (endGameAction.action === "endgame") {
+  if (endGameAction.initiatorName === "self") {
   } else {
     $('#gameEndPlayerName').text(gameEndPlayerName);
+    $(".gameEndPlayer").removeClass("d-none");
   }
+}
+
+
 
 });
 
@@ -374,12 +377,12 @@ baseURL = re.exec(window.location.href);
 window.location.href = baseURL;
 }
 
-$("#myModal button").on("click", function(event){
+$("#gameEndModal button").on("click", function(event){
   event.preventDefault();
   redirectToHome();
 });
 
-$('#myModal').on('hidden.bs.modal', function (e) {
+$('#gameEndModal').on('hidden.bs.modal', function (e) {
   event.preventDefault();
   redirectToHome();
 });

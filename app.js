@@ -6,12 +6,6 @@ const shuffle = require(__dirname + "/shuffle.js");
 const findPlayer = require(__dirname + "/player.js");
 const lessMiddleware = require('less-middleware');
 
-let session = require("express-session")({
-  secret: "my-secret",
-  resave: true,
-  saveUninitialized: true
-});
-let sharedSession = require("express-socket.io-session");
 
 // Create a new Express application
 const app = express();
@@ -26,8 +20,6 @@ app.use(express.static("public"));
 app.use(bodyParser.urlencoded({
   extended: true
 }));
-// Use express-session middleware for express
-app.use(session);
 
 // Create an http server with Node's HTTP module.
 // Pass it the Express application
@@ -36,11 +28,6 @@ const server = require('http').createServer(app);
 // BEFORE const io = require('socket.io')(server);
 let io = require('socket.io').listen(server);
 
-// Use shared session middleware for socket.io
-// setting autoSave:true
-io.use(sharedSession(session, {
-  autoSave: true
-}));
 
 // CONSTANTS and VARIABLES
 let shuffledLetters = [];
@@ -56,7 +43,6 @@ server.listen(3000, function(req, res) {
 });
 
 io.on('connection', function(socket) {
-  socket.emit('sessiondata', socket.handshake.session);
   console.log("SOCKETS at connection start:");
   console.log(io.sockets.adapter.rooms['family-scrabble']);
   console.log('BREAKING: a user connected');
@@ -68,20 +54,16 @@ io.on('connection', function(socket) {
       console.log("DISCONNECTING");
       console.log("Players at disconnect");
       console.log(players);
-      console.log("Session at disconnect");
-      console.log(socket.handshake.session);
       console.log("Socket ID at disconnect");
       console.log(socket.id);
-      console.log(socket.handshake.session);
       const filteredPlayerIndex = findPlayer.findPlayerFromSocketID(socket.id, players);
-      if (filteredPlayerIndex) {
+      console.log("Index when gameOn false: " + filteredPlayerIndex);
+      if (filteredPlayerIndex > -1) {
         // console.log("DISCONNECTING: " + players[filteredPlayerIndex].name);
         const loggedOutUser = {
           index: filteredPlayerIndex,
           name: players[filteredPlayerIndex].name
         };
-        console.log("SESSION at disconnent");
-        console.log(socket.handshake.session);
         console.log("OBJECT loggedOutUser: ");
         console.log(loggedOutUser);
         io.in('family-scrabble').emit('player logout', loggedOutUser);
@@ -93,6 +75,25 @@ io.on('connection', function(socket) {
         console.log("PLAYERS at disconnect: " + players.length);
       } else {
         console.log("Someone not yet added to the players array disconnected - probably a reload or closing the tab before logging in.");
+      }
+
+    } else if (gameOn && currentTurn > 0) { //if gameOn
+
+      console.log("Someone logged out during the game: " + socket.id);
+      console.log(players);
+      const filteredPlayerIndex = findPlayer.findPlayerFromSocketID(socket.id, players);
+      console.log("Index if var exists: " + filteredPlayerIndex);
+      if (filteredPlayerIndex > -1) {
+        let  newEndGameAction = new EndGameAction("logout", players[filteredPlayerIndex].name);
+        console.log(newEndGameAction);
+
+        // reset variables
+        shuffledLetters = [];
+        players = [];
+        currentTurn = 0;
+        let gameOn = false;
+
+        io.emit('game ended', newEndGameAction);
       }
 
     }
@@ -267,10 +268,16 @@ console.log(swappedLetters);
     currentTurn = 0;
     let gameOn = false;
 
+
+    let  newEndGameAction = new EndGameAction("endgame", playerName);
+    console.log(endGameAction);
+
     // to everyone but the initiator
-    socket.broadcast.emit('game ended', playerName);
+    socket.broadcast.emit('game ended', newEndGameAction);
+
+    let  newEndGameActionCurrentPlayer = new EndGameAction("endgame", "self");
     // to initiator
-    socket.emit('game ended', "self");
+    socket.emit('game ended', newEndGameActionCurrentPlayer);
 
   });
 
@@ -285,6 +292,11 @@ function Player(name, order, socketID, letterStack, placement) {
   this.socketID = socketID;
   this.letterStack = letterStack;
   this.placement = placement;
+}
+
+function EndGameAction (action, initiatorName) {
+  this.action = action;
+  this.initiatorName = initiatorName;
 }
 
 // console.log(players);
