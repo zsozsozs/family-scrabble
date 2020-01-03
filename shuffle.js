@@ -202,7 +202,6 @@ exports.shuffleAtStart = function(){
     const letterStack = [];
     let shuffledLetters = [];
     letters.forEach(function(letter) {
-      console.log(letter.letter + " - " + letter.count);
       for (var i = 0; i < letter.count; i++) {
         letterStack.push({
           letter: letter.letter,
@@ -210,29 +209,18 @@ exports.shuffleAtStart = function(){
         });
       }
     });
-    console.log("letterStack: " + letterStack.length);
     shuffledLetters = shuffle(letterStack);
-    console.log("Shuffled letters");
-    console.log(shuffledLetters);
-    console.log("shuffledLetters amount: " + shuffledLetters.length);
-
     return shuffledLetters;
 
 };
 
 
 exports.dealAtStartForPlayer = function(shuffledLetters, letterStackPerPlayer) {
-  console.log("LETTERS: values there?");
-  console.log(shuffledLetters);
-
   const letterStackToBeDealt = [];
 
   for (var i = 0; i < letterStackPerPlayer; i++) {
     if (shuffledLetters.length > 0) {
       letterStackToBeDealt.push(shuffledLetters.shift());
-      console.log("letterStackToBeDealt: " + letterStackToBeDealt);
-    } else {
-      console.log("No more letters.");
     }
   }
 

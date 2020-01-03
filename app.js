@@ -13,8 +13,7 @@ app.set('view engine', 'ejs');
 app.use(lessMiddleware((__dirname + '/less'), {
   dest: __dirname + '/public',
   // only for development
-  force: true,
-  // debug: true
+  force: true
 }));
 app.use(express.static("public"));
 app.use(bodyParser.urlencoded({
@@ -34,82 +33,56 @@ let shuffledLetters = [];
 let players = [];
 let currentTurn = 0;
 const letterStackPerPlayer = 7;
-const maxPlayers = 2;
+const maxPlayers = 4;
 let gameOn = false;
 
 // Listen on port 3000.
 server.listen(3000, function(req, res) {
-  console.log("Server running on port 3000.");
+  // console.log("Server running on port 3000.");
 });
 
 io.on('connection', function(socket) {
 
   if (gameOn) {
-    console.log("GAME ON");
-  } else {
-    console.log("GAME OFF");
+    // notify client (only the one)
+    socket.emit('game on or off', true);
+    socket.emit('game full', 'A játék épp folyamatban van. Próbálkozz később!');
   }
-  console.log("SOCKETS at connection start:");
-  console.log(io.sockets.adapter.rooms['family-scrabble']);
-  console.log('BREAKING: a user connected');
-  console.log("PLAYERS at connect: " + players.length);
 
   socket.on('disconnect', function() {
-    // TODO: condition for when window is closed before having logged in (currently exception comes)
     if (!gameOn) {
-      console.log("DISCONNECTING");
-      console.log("Players at disconnect");
-      console.log(players);
-      console.log("Socket ID at disconnect");
-      console.log(socket.id);
+      // check if player is in players array
       const filteredPlayerIndex = findPlayer.findPlayerFromSocketID(socket.id, players);
-      console.log("Index when gameOn false: " + filteredPlayerIndex);
-      if (filteredPlayerIndex) {
-        // console.log("DISCONNECTING: " + players[filteredPlayerIndex].name);
+      if (filteredPlayerIndex) { //do this only if player is in players array
         const loggedOutUser = {
           index: filteredPlayerIndex,
           name: players[filteredPlayerIndex].name
         };
-        console.log("OBJECT loggedOutUser: ");
-        console.log(loggedOutUser);
         io.in('family-scrabble').emit('player logout', loggedOutUser);
         players.splice(filteredPlayerIndex, 1);
         io.in('family-scrabble').emit('update players', players);
-        console.log("PLAYERS AFTER REMOVING after DISCONNECT");
-        console.log(players);
-        console.log('BREAKING: user disconnected');
-        console.log("PLAYERS at disconnect: " + players.length);
-      } else {
-        console.log("Someone not yet added to the players array disconnected - probably a reload or closing the tab before logging in.");
       }
 
     } else if (gameOn && currentTurn > 0) { //if gameOn
-
-      console.log("Someone logged out during the game: " + socket.id);
-      console.log(players);
+      // check if player is in players array
       const filteredPlayerIndex = findPlayer.findPlayerFromSocketID(socket.id, players);
-      console.log("Index if var exists: " + filteredPlayerIndex);
-      if (filteredPlayerIndex > -1) {
-        let  newEndGameAction = new EndGameAction("logout", players[filteredPlayerIndex].name);
-        console.log(newEndGameAction);
+      if (filteredPlayerIndex || filteredPlayerIndex > -1) {
+        let newEndGameAction = new EndGameAction("logout", players[filteredPlayerIndex].name);
 
         // reset variables
         shuffledLetters = [];
         players = [];
         currentTurn = 0;
-        let gameOn = false;
-
-        io.emit('game ended', newEndGameAction);
+        gameOn = false;
+        io.emit('game on or off', false); //push end of game state to all connections
+        io.in('family-scrabble').emit('game ended', newEndGameAction);
       }
 
     }
   });
 
   socket.on('player login', function(playerName) {
-    console.log('message: ' + playerName);
-    if (players.length <= (maxPlayers - 1)) {
-      console.log("MAX players: " + maxPlayers);
-      console.log("PLAYERS at start: " + players.length);
+    if (players.length <= (maxPlayers - 1)) { //if game not yet full
       let newPlayer = new Player(playerName, players.length + 1, socket.id);
       players.push(newPlayer);
       // join game room
@@ -118,74 +91,44 @@ io.on('connection', function(socket) {
       socket.to('family-scrabble').emit('player login', playerName);
       // update everyone's player list
       io.in('family-scrabble').emit('update players', players);
-      console.log("PLAYERS after adding player: " + players.length);
-      console.log("ROOM MEMBERS after adding player: " + io.sockets.adapter.rooms['family-scrabble'].length);
       if (players.length === maxPlayers && io.sockets.adapter.rooms['family-scrabble'].length === maxPlayers) {
         io.in('family-scrabble').emit('start game', "Játék indítása.");
-        console.log("START GAME");
-        console.log(players);
         gameOn = true;
+        io.emit('game on or off', true);
         players = [];
 
         shuffledLetters = shuffle.shuffleAtStart();
 
       }
-    } else {
-      console.log("PLAYERS full: " + players.length);
+    } else { //if game full
       // notify client (only the one)
-      socket.emit('game full', 'A játék betelt.');
+      socket.emit('game full', 'A játék betelt. Próbálkozz később!');
     }
-
-    console.log("SOCKETS at connection end:");
-    console.log(io.sockets.adapter.rooms['family-scrabble']);
-
-    console.log(players);
-    var room = io.sockets.adapter.rooms['family-scrabble'];
-    console.log("ROOM members: " + room.length);
   });
 
   socket.on('deal', function(playerName) {
-    console.log("DEAL");
     let dealing = shuffle.dealAtStartForPlayer(shuffledLetters, letterStackPerPlayer);
     let newPlayer = new Player(playerName, players.length + 1, socket.id, dealing.letterStackToBeDealt);
     shuffledLetters = dealing.shuffledLettersAfterDealing;
-    console.log("SHUFFLED letters after dealing");
-    console.log("SHUFFLED letters after dealing amount: " + shuffledLetters.length);
-    console.log(shuffledLetters);
     players.push(newPlayer);
     // join game room
     socket.join("family-scrabble");
 
-    console.log("Players after dealing letters");
-    console.log(players);
-    console.log("ROOM MEMBERS after dealing: " + io.sockets.adapter.rooms['family-scrabble'].length);
-
     //find player based on socket id
     const filteredPlayerIndex = findPlayer.findPlayerFromSocketID(socket.id, players);
 
-
-
-    console.log("Filtered player index for updating letters: " + filteredPlayerIndex);
-    console.log(players[filteredPlayerIndex]);
-    console.log(players[filteredPlayerIndex].letterStack);
-
     // do this when the last player gets dealt
-    if (filteredPlayerIndex === (maxPlayers-1)) {
-      console.log("PLAYER INDEX in iF: " + filteredPlayerIndex);
-      players.forEach(function(player){
-              console.log(player.name + " , " + player.letterStack);
-        io.emit("show other players", player.name);
-        console.log("Show remaining letters 1: " + shuffledLetters.length);
+    if (filteredPlayerIndex === (maxPlayers - 1)) {
+      players.forEach(function(player) {
+        io.in('family-scrabble').emit("show other players", player.name);
       });
 
-        //first player should start the game when last player is in
-        console.log(players[0].name + " will start the game");
-        currentTurn = 1;
-        io.to(players[0].socketID).emit('start turn', 'FIRST round: your turn');
-        console.log(players[0].socketID + " started the game");
+      //first player should start the game when last player is in
+      currentTurn = 1;
+      io.to(players[0].socketID).emit('start turn');
 
-        io.emit('update remaining letters', shuffledLetters.length);
-        io.emit('show whose turn', 1);
+      io.emit('update remaining letters', shuffledLetters.length);
+      io.emit('show whose turn', 1);
 
     }
 
@@ -195,7 +138,6 @@ io.on('connection', function(socket) {
   });
 
   socket.on('place tile', function(placedTile) {
-    console.log(placedTile);
 
     if (placedTile.action === "add") {
       socket.to('family-scrabble').emit('get added tile', placedTile);
@@ -206,82 +148,53 @@ io.on('connection', function(socket) {
     }
   });
 
-    socket.on('swapping letters', function(swappedLetters) {
-      console.log("SWAPPING LETTERS");
-      console.log(swappedLetters);
-console.log("BEFORE SWAPPING: ");
-console.log("Swapped letters: " + swappedLetters.length);
-console.log("Shuffled letters: " + shuffledLetters.length);
+  socket.on('swapping letters', function(swappedLetters) {
 
-swappedLetters.forEach(function(letter, index){
-console.log("Swapped letters in loop: " + swappedLetters.length);
-console.log("Current letter: " + swappedLetters[0].letter);
-posOfAddedLetter = Math.floor(Math.random() * shuffledLetters.length);
-shuffledLetters.splice(posOfAddedLetter, 0, swappedLetters[index]);
-console.log("Remaining swapped in loop: ");
-console.log(swappedLetters);
-});
-//empty array
-swappedLetters = [];
-console.log("AFTER SWAPPING: ");
-console.log("Swapped letters: " + swappedLetters.length);
-console.log("Shuffled letters: " + shuffledLetters.length);
-console.log(swappedLetters);
+    swappedLetters.forEach(function(letter, index) {
+      posOfAddedLetter = Math.floor(Math.random() * shuffledLetters.length);
+      shuffledLetters.splice(posOfAddedLetter, 0, swappedLetters[index]);
     });
+    //empty array
+    swappedLetters = [];
+
+  });
 
   socket.on('finish turn', function(remainingLetters) {
     let dealtLetters = [];
-    console.log("FINISHING TURN");
-    for (var i = 0; i < letterStackPerPlayer-remainingLetters; i++) {
+    for (var i = 0; i < letterStackPerPlayer - remainingLetters; i++) {
       if (shuffledLetters.length > 0) {
-        console.log(shuffledLetters.length + " letters remaining.");
         dealtLetters.push(shuffledLetters.shift());
       } else {
-        console.log("0 letters left.");
         break;
       }
     }
-    console.log("Letters to be dealt:");
-    console.log(dealtLetters);
-    console.log("Remaining letters after redealing: " + shuffledLetters.length);
     socket.emit('update letterstack', dealtLetters);
-    console.log("Show remaining letters 2: " + shuffledLetters.length);
+    io.emit('fix placed tiles');
     io.emit('update remaining letters', shuffledLetters.length);
 
     currentTurn++;
-    console.log("Shuffled letters remaining: " + shuffledLetters.length);
-    console.log(shuffledLetters);
-    console.log(socket.id + " passed his/her turn.");
-    console.log("Current turn: " + currentTurn);
-    console.log("How many players? " + players.length);
-
-    console.log("Next up: player " + (currentTurn + 1) % players.length );
     let nextPlayerID = (currentTurn + 1) % players.length;
     const socketIdOfNextPlayer = players[nextPlayerID].socketID;
-    console.log("Next player: " + socketIdOfNextPlayer);
     // sending to individual socketid (private message)
     io.to(socketIdOfNextPlayer).emit('start turn', 'Your turn');
-    io.emit('show whose turn', (nextPlayerID+1));
+    io.emit('show whose turn', (nextPlayerID + 1));
 
   });
 
   socket.on('finish game', function(playerName) {
-    console.log(playerName + " is initiating finishing the game.");
-
     // reset variables
     shuffledLetters = [];
     players = [];
     currentTurn = 0;
-    let gameOn = false;
+    gameOn = false;
+    io.emit('game on or off', false);
 
-
-    let  newEndGameAction = new EndGameAction("endgame", playerName);
-    console.log(newEndGameAction);
+    let newEndGameAction = new EndGameAction("endgame", playerName);
 
     // to everyone but the initiator
     socket.broadcast.emit('game ended', newEndGameAction);
 
-    let  newEndGameActionCurrentPlayer = new EndGameAction("endgame", "self");
+    let newEndGameActionCurrentPlayer = new EndGameAction("endgame", "self");
     // to initiator
     socket.emit('game ended', newEndGameActionCurrentPlayer);
 
@@ -300,12 +213,10 @@ function Player(name, order, socketID, letterStack, placement) {
   this.placement = placement;
 }
 
-function EndGameAction (action, initiatorName) {
+function EndGameAction(action, initiatorName) {
   this.action = action;
   this.initiatorName = initiatorName;
 }
-
-// console.log(players);
 
 app.get("/", function(req, res) {
   res.render("login", {
@@ -315,18 +226,9 @@ app.get("/", function(req, res) {
 
 
 app.post("/board", function(req, res) {
-  console.log("GET BOARD AND DEAL");
-  console.log(req.body.firstName);
 
   res.render("board", {
     firstName: req.body.firstName
-  });
-
-});
-
-app.get("/board", function(req, res) {
-  res.render("board", {
-    firstName: "Test"
   });
 
 });
