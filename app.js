@@ -36,9 +36,12 @@ const letterStackPerPlayer = 7;
 const maxPlayers = 4;
 let gameOn = false;
 
-// Listen on port 3000.
-server.listen(3000, function(req, res) {
-  // console.log("Server running on port 3000.");
+// for deployment
+const server_port = process.env.OPENSHIFT_NODEJS_PORT || 3000;
+const server_ip_address = process.env.OPENSHIFT_NODEJS_IP || '127.0.0.1';
+
+server.listen(server_port, server_ip_address, function () {
+  // console.log( "Listening on " + server_ip_address + ", port " + server_port )
 });
 
 io.on('connection', function(socket) {
