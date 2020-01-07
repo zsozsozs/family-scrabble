@@ -36,7 +36,7 @@ const letterStackPerPlayer = 7;
 const maxPlayers = 4;
 let gameOn = false;
 
-server.listen(process.env.port || 3000, function () {
+server.listen(process.env.PORT || 3000, function () {
   console.log("Server running.");
 });
 
