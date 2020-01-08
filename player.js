@@ -7,7 +7,7 @@ exports.findPlayerFromSocketID = function(socketID, players) {
   if (filteredPlayerIndex > -1) {
     return filteredPlayerIndex;
   } else {
-    return false;
+    return -1;
   }
 
 };

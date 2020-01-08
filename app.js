@@ -31,9 +31,9 @@ let io = require('socket.io').listen(server);
 // CONSTANTS and VARIABLES
 let shuffledLetters = [];
 let players = [];
-let currentTurn = 0;
+let currentTurn = -1;
 const letterStackPerPlayer = 7;
-const maxPlayers = 4;
+const maxPlayers = 3;
 let gameOn = false;
 
 server.listen(process.env.PORT || 3000, function () {
@@ -52,7 +52,7 @@ io.on('connection', function(socket) {
     if (!gameOn) {
       // check if player is in players array
       const filteredPlayerIndex = findPlayer.findPlayerFromSocketID(socket.id, players);
-      if (filteredPlayerIndex) { //do this only if player is in players array
+      if (filteredPlayerIndex >= 0) { //do this only if player is in players array
         const loggedOutUser = {
           index: filteredPlayerIndex,
           name: players[filteredPlayerIndex].name
@@ -62,10 +62,10 @@ io.on('connection', function(socket) {
         io.in('family-scrabble').emit('update players', players);
       }
 
-    } else if (gameOn && currentTurn > 0) { //if gameOn
+    } else if (gameOn && currentTurn >= 0) { //if gameOn
       // check if player is in players array
       const filteredPlayerIndex = findPlayer.findPlayerFromSocketID(socket.id, players);
-      if (filteredPlayerIndex || filteredPlayerIndex > -1) {
+      if (filteredPlayerIndex >= 0) {
         let newEndGameAction = new EndGameAction("logout", players[filteredPlayerIndex].name);
 
         // reset variables
@@ -123,7 +123,7 @@ io.on('connection', function(socket) {
       });
 
       //first player should start the game when last player is in
-      currentTurn = 1;
+      currentTurn = 0;
       io.to(players[0].socketID).emit('start turn');
 
       io.emit('update remaining letters', shuffledLetters.length);
@@ -172,7 +172,7 @@ io.on('connection', function(socket) {
     io.emit('update remaining letters', shuffledLetters.length);
 
     currentTurn++;
-    let nextPlayerID = (currentTurn + 1) % players.length;
+    let nextPlayerID = currentTurn % players.length;
     const socketIdOfNextPlayer = players[nextPlayerID].socketID;
     // sending to individual socketid (private message)
     io.to(socketIdOfNextPlayer).emit('start turn', 'Your turn');
