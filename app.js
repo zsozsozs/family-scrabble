@@ -48,7 +48,8 @@ io.on('connection', function(socket) {
     socket.emit('game full', 'A játék épp folyamatban van. Próbálkozz később!');
   }
 
-  socket.on('disconnect', function() {
+  socket.on('disconnect', function(reason) {
+    console.log('User disconnected because '+ reason);
     if (!gameOn) {
       // check if player is in players array
       const filteredPlayerIndex = findPlayer.findPlayerFromSocketID(socket.id, players);
