@@ -33,7 +33,7 @@ let shuffledLetters = [];
 let players = [];
 let currentTurn = -1;
 const letterStackPerPlayer = 7;
-const maxPlayers = 4;
+const maxPlayers = 1;
 let gameOn = false;
 
 server.listen(process.env.PORT || 3000, function () {
@@ -41,6 +41,7 @@ server.listen(process.env.PORT || 3000, function () {
 });
 
 io.on('connection', function(socket) {
+  console.log('---User connected');
 
   if (gameOn) {
     // notify client (only the one)
@@ -48,8 +49,16 @@ io.on('connection', function(socket) {
     socket.emit('game full', 'A játék épp folyamatban van. Próbálkozz később!');
   }
 
+  socket.on('reconnect_failed', function() {
+    console.log("--Reconnect failed for user " + socket.id);
+});
+
+socket.on('reconnect', function() {
+  console.log("--Reconnect success " + socket.id);
+});
+
   socket.on('disconnect', function(reason) {
-    console.log('User disconnected because '+ reason);
+    console.log('---User disconnected because '+ reason);
     if (!gameOn) {
       // check if player is in players array
       const filteredPlayerIndex = findPlayer.findPlayerFromSocketID(socket.id, players);
@@ -83,7 +92,7 @@ io.on('connection', function(socket) {
 
   socket.on('player login', function(playerName) {
     if (players.length <= (maxPlayers - 1)) { //if game not yet full
-      let newPlayer = new Player(playerName, players.length + 1, socket.id);
+      let newPlayer = new Player(playerName, players.length + 1, 0, socket.id);
       players.push(newPlayer);
       // join game room
       socket.join("family-scrabble");
@@ -108,7 +117,7 @@ io.on('connection', function(socket) {
 
   socket.on('deal', function(playerName) {
     let dealing = shuffle.dealAtStartForPlayer(shuffledLetters, letterStackPerPlayer);
-    let newPlayer = new Player(playerName, players.length + 1, socket.id, dealing.letterStackToBeDealt);
+    let newPlayer = new Player(playerName, players.length + 1, 0, socket.id, dealing.letterStackToBeDealt);
     shuffledLetters = dealing.shuffledLettersAfterDealing;
     players.push(newPlayer);
     // join game room
@@ -129,6 +138,7 @@ io.on('connection', function(socket) {
 
       io.emit('update remaining letters', shuffledLetters.length);
       io.emit('show whose turn', 1);
+      io.in('family-scrabble').emit('update results table with new row', players.length);
 
     }
 
@@ -169,6 +179,7 @@ io.on('connection', function(socket) {
       }
     }
     socket.emit('update letterstack', dealtLetters);
+    socket.emit('count points');
     io.emit('fix placed tiles');
     io.emit('update remaining letters', shuffledLetters.length);
 
@@ -177,8 +188,21 @@ io.on('connection', function(socket) {
     const socketIdOfNextPlayer = players[nextPlayerID].socketID;
     // sending to individual socketid (private message)
     io.to(socketIdOfNextPlayer).emit('start turn', 'Your turn');
-    io.emit('show whose turn', (nextPlayerID + 1));
+    io.in('family-scrabble').emit('show whose turn', (nextPlayerID + 1));
 
+  });
+
+  socket.on('submit points of round', function(pointsSubmitted){
+    const filteredPlayerIndex = findPlayer.findPlayerFromSocketID(socket.id, players);
+    players[filteredPlayerIndex].points += pointsSubmitted;
+    let result = {
+      player: filteredPlayerIndex,
+      points: players[filteredPlayerIndex].points
+    };
+    io.in('family-scrabble').emit('update points', result);
+    if (currentTurn % players.length === 0) {
+      io.in('family-scrabble').emit('update results table with new row', players.length);
+    }
   });
 
   socket.on('finish game', function(playerName) {
@@ -205,9 +229,10 @@ io.on('connection', function(socket) {
 
 
 
-function Player(name, order, socketID, letterStack, placement) {
+function Player(name, order, points, socketID, letterStack, placement) {
   this.name = name;
   this.order = order;
+  this.points = points;
   this.socketID = socketID;
   this.letterStack = letterStack;
   this.placement = placement;

@@ -105,6 +105,12 @@ socket.on('update remaining letters', function(number) {
   $("#remainingLetters").text(number);
 });
 
+socket.on('update points', function(result) {
+  console.log("RESULT");
+  console.log(result);
+  $(".otherPlayers table.results tr:last td:nth-of-type(" + (result.player + 1) + ") ").append(result.points);
+});
+
 $(".cell").on("click", "button.tile", function(event) {
   event.stopPropagation();
   if (yourTurn) {
@@ -299,9 +305,203 @@ $("#finishTurn").click(function() {
   socket.emit('finish turn', remainingLetters);
 });
 
+function checkNeighboringCellForFixedTiles(rowNum, colNum, direction, foundCounter = 0, pointsCountedSoFar = 0) {
+  // optional parameters used when function calls itself when checking for more neighbouring tiles
+
+  // modified row and column numbers for finding the desired nieghbouring cell
+  let newRowNum = rowNum;
+  let newColNum = colNum;
+
+  if (direction === "left") {
+    newColNum = colNum - 1;
+  } else if (direction === "up") {
+    newRowNum = rowNum - 1;
+  } else if (direction === "right") {
+    newColNum = colNum + 1;
+  } else if (direction === "down") {
+    newRowNum = rowNum + 1;
+  }
+
+  if (newRowNum > 0 && newColNum > 0) { //if side of board not yet reached
+    let neighboringCell = $(".cell-" + newRowNum + "-" + newColNum);
+
+    if (neighboringCell.children("button.tile.fixed").not(".counted").length === 1) { //if fixed tile is found
+      neighboringCell.children("button.tile.fixed").addClass("counted");
+      foundCounter++;
+      pointsCountedSoFar += parseInt(neighboringCell.children("button.tile.fixed").attr("data-value"));
+      return checkNeighboringCellForFixedTiles(newRowNum, newColNum, direction, foundCounter, pointsCountedSoFar);
+    } else if (neighboringCell.children("button.tile").not(".fixed").length === 1) { //if freshly laid tile is found
+      // continue search if there is a newly laid tile in between
+      return checkNeighboringCellForFixedTiles(newRowNum, newColNum, direction, foundCounter, pointsCountedSoFar);
+    } else { //if NO tile is found
+      if (foundCounter > 0) {
+        return pointsCountedSoFar;
+      } else {
+        return -1;
+      }
+    }
+  } else { //if side of board reached
+    if (foundCounter > 0) { //if tiles have been found
+      return pointsCountedSoFar;
+    } else { //if NO tiles have been found at all
+      return -1;
+    }
+  }
+
+}
+
+function removeCountedClassFromFixedTiles() {
+  $(".scrabbleBoard button.tile.counted").each(function() {
+    $(this).removeClass("counted");
+  });
+}
+
+socket.on('count points', function() {
+  let starterRowNum; //for determining the direction of the word
+  let starterColNum; //for determining the direction of the word
+  let horizontalWord = false;
+  let verticalWord = false; //when only one letter is laid down, both horizontalWord or verticalWord are false
+  let newWordValMultiplier = 1; // store word multiplier value
+
+  let newWordPointsBuffer = 0; //buffer to store the points OF THE NEWLY LAID TILES globally (value gets accumulated with each iteration of the counter loop)
+  let pointsToSubmit = 0; //value accumulated from the FIXED TILES (fixed) the newly laid word connected to, will be eventually the holder of ALL the points
+
+  //  do this loop of the newly laid tiles - separate from point calculation, as we will need to work with the result when we examine all the letters one by one later
+  // 1. word value multiplier
+  // 2. direction of word
+  $(".scrabbleBoard button.tile").not(".fixed").each(function(index) {
+    //set word multiplier, if it has to be modified
+    if ($(this).closest(".cell").is("[data-val-w]")) {
+      newWordValMultiplier *= parseInt($(this).closest(".cell").attr("data-val-w"));
+    }
+
+    //set direction of word
+    if (index === 0) {
+      let posAttr = $(this).closest(".cell").attr("data-pos");
+      let rowNum = parseInt(posAttr.substring(0, posAttr.indexOf("-")));
+      let colNum = parseInt(posAttr.substring(posAttr.indexOf("-") + 1));
+      starterRowNum = rowNum;
+      starterColNum = colNum;
+    } else {
+      // check if there are more letters to the word horizontally (a fixed tile in between is no problem)
+      if ($(this).closest(".cell").hasClass("r-" + starterRowNum)) {
+        horizontalWord = true;
+      } else {
+        horizontalWord = false;
+      }
+      // check if there are more letters to the word vertically (a fixed tile in between is no problem)
+      if ($(this).closest(".cell").hasClass("c-" + starterColNum)) {
+        verticalWord = true;
+      } else {
+        verticalWord = false;
+      }
+    }
+
+  });
+
+  // in this second loop the points will be counted up
+  $(".scrabbleBoard button.tile").not(".fixed").each(function(index) {
+
+    //attributes of tile and cell
+    let posAttr = $(this).closest(".cell").attr("data-pos");
+    let rowNum = parseInt(posAttr.substring(0, posAttr.indexOf("-")));
+    let colNum = parseInt(posAttr.substring(posAttr.indexOf("-") + 1));
+    let letterValue = parseInt($(this).attr("data-value"));
+    let letterValMultiplier = 1; //based on cell
+    let wordValMultiplier = 1; //based on cell
+
+    //variabled for data about connected tiles and points
+    let horizontalNeighbours = false; //does the letter have horizontal neighbours?
+    let horizontalNeighbourPoints = 0; //amount of points coming from the letter's horizontal neighbours
+    let verticalNeighbours = false; //does the letter have vertical neighbours?
+    let verticalNeighbourPoints = 0; //amount of points coming from the letter's horizontal neighbours
+
+    //if cell has special attribute - set letterValMultiplier and wordValMultiplier (this is on the level of the letter, the global word value modifier is set elsewhere)
+    if ($(this).closest(".cell").is("[data-val-l]")) {
+      letterValMultiplier = parseInt($(this).closest(".cell").attr("data-val-l"));
+    }
+    if ($(this).closest(".cell").is("[data-val-w]")) {
+      wordValMultiplier = parseInt($(this).closest(".cell").attr("data-val-w"));
+    }
+
+    // COUNT FIXED LETTERS
+
+    // did the new word connect to any other words HORIZONTALLY?
+    let pointsFromLeft = checkNeighboringCellForFixedTiles(rowNum, colNum, "left");
+    let pointsFromRight = checkNeighboringCellForFixedTiles(rowNum, colNum, "right");
+    // count up points of HORIZONTALLY connected letters
+    if (pointsFromLeft >= 0 || pointsFromRight >= 0) { //have to take into account, that the letter we connect to, is 0, otherwise if no tile found, -1 comes back
+      horizontalNeighbours = true;
+      if (pointsFromLeft >= 0) {
+        horizontalNeighbourPoints += pointsFromLeft;
+      }
+      if (pointsFromRight >= 0) {
+        horizontalNeighbourPoints += pointsFromRight;
+      }
+      // determine which word multiplier to use: GLOBAL or LOCAL
+      if (horizontalWord) {
+        pointsToSubmit += (horizontalNeighbourPoints * newWordValMultiplier); // GLOBAL word value multiplier
+        // if the newly laid word is horizontal too (as are the fixed tiles it connected to), multiply the horizontalNeighbourPoints by the GLOBAL word value multiplier
+      } else {
+        pointsToSubmit += (horizontalNeighbourPoints * wordValMultiplier); // LOCAL word value wordValMultiplier
+        // if the newly laid word is NOT horizontal (like the fixed tiles it connected to), the LOCAL word value multiplier has to be used (the GLOBAL value is not relevant, as the horizontal fixed tiles do not belong to the MAIN word)
+      }
+    }
+
+    // did the new word connect to any other words VERTICALLY?
+    let checkUp = checkNeighboringCellForFixedTiles(rowNum, colNum, "up");
+    let checkDown = checkNeighboringCellForFixedTiles(rowNum, colNum, "down");
+    // count up points of VERTICALLY connected letters
+    if (checkUp >= 0 || checkDown >= 0) { //have to take into account, that the letter we connect to, is 0, otherwise if no tile found, -1 comes back
+      verticalNeighbours = true;
+      if (checkUp >= 0) {
+        verticalNeighbourPoints += checkUp;
+      }
+      if (checkDown >= 0) {
+        verticalNeighbourPoints += checkDown;
+      }
+      // determine which word multiplier to use: GLOBAL or LOCAL
+      if (verticalWord) {
+        pointsToSubmit += (verticalNeighbourPoints * newWordValMultiplier); // GLOBAL word value multiplier
+        // if the newly laid word is vertical too (as are the fixed tiles it connected to), multiply the verticalNeighbourPoints by the GLOBAL word value multiplier
+      } else {
+        pointsToSubmit += (verticalNeighbourPoints * wordValMultiplier); // LOCAL word value wordValMultiplier
+        // if the newly laid word is NOT vertical (like the fixed tiles it connected to), the LOCAL word value multiplier has to be used (the GLOBAL value is not relevant, as the vertical fixed tiles do not belong to the MAIN word)
+      }
+    }
+
+    // COUNT NEWLY PUT DOWN LETTERS
+
+    if (!horizontalWord && !verticalWord) { // only one letter
+      if ((horizontalNeighbours && verticalNeighbours)) {
+        //count 2x
+        newWordPointsBuffer += (letterValue * letterValMultiplier * 2);
+      } else {
+        // count 1x
+        newWordPointsBuffer += (letterValue * letterValMultiplier);
+      }
+    } else { // more letters
+      if ((horizontalWord && verticalNeighbours) || (verticalWord && horizontalNeighbours) || (horizontalNeighbours && verticalNeighbours)) {
+        // count 2x
+        // 1x it goes to the calculation of the fixed tiles the newly laid word connected to
+        pointsToSubmit += (letterValue * letterValMultiplier * wordValMultiplier); //the LOCAL word value multiplier has to be used (the GLOBAL value is not relevant, as the vertical fixed tiles do not belong to the MAIN word)
+        // 1x it goes to the calculation of the points of the newly laid word
+        newWordPointsBuffer += (letterValue * letterValMultiplier);
+      } else {
+        // count once
+        newWordPointsBuffer += (letterValue * letterValMultiplier);
+      }
+    }
+
+  });
+  removeCountedClassFromFixedTiles();
+  pointsToSubmit += (newWordPointsBuffer * newWordValMultiplier); // multiply points of the MAIN word with the global multiplier
+  socket.emit('submit points of round', pointsToSubmit);
+
+});
 
 socket.on('fix placed tiles', function() {
-  $(".scrabbleBoard button.tile").each(function() {
+  $(".scrabbleBoard button.tile").not(".fixed").each(function(index) {
     $(this).addClass("fixed");
     $(this).closest(".cell").addClass("taken");
   });
@@ -316,15 +516,23 @@ socket.on('start turn', function() {
   $("#finishTurn").removeClass("d-none");
 });
 
+socket.on('update results table with new row', function(noOfPlayers) {
+  $(".otherPlayers table.results").append("<tr></tr>");
+  for (var i = 0; i < noOfPlayers; i++) {
+    $(".otherPlayers table.results tr:last").append("<td></td>");
+  }
+});
+
 socket.on('show other players', function(playerName) {
-  $(".otherPlayers").append("<span>" + playerName + "</span>");
+  $(".otherPlayers table.results tr.players").append("<th><span>" + playerName + "</span></th>");
 });
 
 socket.on('show whose turn', function(nextPlayerIndex) {
-  $(".otherPlayers").children("span").each(function() {
+  $(".otherPlayers table.results tr.players th span").each(function() {
     $(this).removeClass("current");
   });
-  $(".otherPlayers").children("span:nth-of-type(" + nextPlayerIndex + ")").addClass("current");
+  console.log("nextPlayerIndex: " + nextPlayerIndex);
+  $(".otherPlayers table.results tr.players th:nth-child(" + nextPlayerIndex + ") span").addClass("current");
 
 });
 

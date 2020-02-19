@@ -11,10 +11,7 @@
 
 
       <div class="col-lg-4 controlBar">
-        <div class="otherPlayers">
-          <h2>Sorrend</h2>
 
-        </div>
         <div class="currentPlayer">
           <h2 id="playerName">
             <%= firstName%>
@@ -30,6 +27,12 @@
             </button>
             <button type="button" id="finishTurn" class="tile fixed d-none">Küldés</button>
           </div>
+        </div>
+        <div class="otherPlayers">
+          <h2>Sorrend és eredmény</h2>
+          <table class="results">
+            <tr class="players"></tr>
+          </table>
         </div>
         <div class="remainingLetters">
           <p>Maradék betűk: <span id="remainingLetters"></span></p>
@@ -63,7 +66,7 @@
         <div class="scrabbleBoard">
 
           <div class="cell cell-1-1 r-1 c-1 val-w-3" data-pos="1-1" data-val-w="3"></div>
-          <div class="cell cell-1-2 r-1 c-2" data-pos="1-2"></div>
+          <div class="cell cell-1-2 r-1 c-2" data-pos="1-2" data-c="1"></div>
           <div class="cell cell-1-3 r-1 c-3" data-pos="1-3"></div>
           <div class="cell cell-1-4 r-1 c-4" data-pos="1-4"></div>
           <div class="cell cell-1-5 r-1 c-5" data-pos="1-5"></div>
@@ -177,7 +180,7 @@
           <div class="cell cell-8-1 r-8 c-1 val-w-3" data-pos="8-1" data-val-w="3"></div>
           <div class="cell cell-8-2 r-8 c-2" data-pos="8-2"></div>
           <div class="cell cell-8-3 r-8 c-3" data-pos="8-3"></div>
-          <div class="cell cell-8-4 r-8 c-4 val-l-2" data-pos="8-4"></div>
+          <div class="cell cell-8-4 r-8 c-4 val-l-2" data-pos="8-4" data-val-l="2"></div>
           <div class="cell cell-8-5 r-8 c-5" data-pos="8-5"></div>
           <div class="cell cell-8-6 r-8 c-6" data-pos="8-6"></div>
           <div class="cell cell-8-7 r-8 c-7" data-pos="8-7"></div>
