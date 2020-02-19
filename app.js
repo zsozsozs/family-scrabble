@@ -33,7 +33,7 @@ let shuffledLetters = [];
 let players = [];
 let currentTurn = -1;
 const letterStackPerPlayer = 7;
-const maxPlayers = 1;
+const maxPlayers = 4;
 let gameOn = false;
 
 server.listen(process.env.PORT || 3000, function () {
