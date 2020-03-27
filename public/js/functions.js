@@ -13,46 +13,43 @@ $(window).on('load', function(e) {
     }
   }
 
-  if (sessionStorage.getItem('scrabbleLogin')) { //set temporarily at "start game" so we know who to show the board to and who to shoo away
-    console.log('login active');
-    // BOARD view
-    if ($('#board').length > 0) {
-      currentPlayerName = $("#playerName").text().trim();
-      socket.emit('deal', currentPlayerName);
-    }
-    sessionStorage.removeItem('scrabbleLogin');
-  } else {
-    console.log('you are not due to log in');
-    //TODO
-    // game full / ongoing
-  }
+  if ($('#board').length > 0) {
 
-  if (sessionStorage.getItem('scrabbleID')) { //if exists - we set it when dealing, so if you just call 'board' this is false
-    console.log('sessionStorage item exists');
-    socket.emit('check if active player', sessionStorage.getItem('scrabbleID'), function(data) {
-      console.log(data);
-      if (data) {
-        console.log('data transmitted: ', data);
-        sessionStorage.setItem('scrabbleID', data.newSocketID);
-        // set name
-        $('#playerName').text(data.name);
-        // set turn
-        if (data.yourTurn == true) {
-          yourTurn = true;
-          $("#swapLetters").removeClass("d-none");
-          $("#finishTurn").removeClass("d-none");
+
+    if (sessionStorage.getItem('scrabbleID')) { //if exists - we set it when dealing, so if you just call 'board' this is false
+      console.log('sessionStorage item exists');
+      socket.emit('check if active player', sessionStorage.getItem('scrabbleID'), function(data) {
+        if (data) {
+          sessionStorage.setItem('scrabbleID', data.newSocketID);
+          // set name
+          $('#playerName').text(data.name);
+          // set turn
+          if (data.yourTurn == true) {
+            yourTurn = true;
+            $("#swapLetters").removeClass("d-none");
+            $("#finishTurn").removeClass("d-none");
+          }
+        } else {
+          console.log('unvalid scrabbleID: your ID is not from an ongoing game');
+          // when someone loses connection and reloads on board view
+          //at this point the game is over
+          redirectToHome(); //scrabbleID needs to be removed from sessionStorage - done by redirectToHome
         }
+      });
+    } else { // no scrabbleID in sessionStorage
+      if (sessionStorage.getItem('scrabbleLogin')) { //set temporarily at "start game" so we know who to show the board to and who to shoo away
+          currentPlayerName = $("#playerName").text().trim();
+          socket.emit('deal', currentPlayerName);
+        sessionStorage.removeItem('scrabbleLogin');
       } else {
-        console.log('user not found');
-
+        console.log('no scrabbleID: you have not been playing');
+        // game full / ongoing
+        redirectToHome(); //scrabbleLogin needs to be removed from sessionStorage - done by redirectToHome
       }
-    });
-  } else {
-    // TODO
+    }
+
+
   }
-
-
-
 
 });
 
@@ -73,12 +70,22 @@ $("#loginForm").submit(function(event) {
 
  // NEW
  socket.on('disconnect', (reason) => {
-   alert('Ooops, it seems like you got disconnected. Reason:' + reason + '<br> Please reload the page.');
-   if (reason === 'io server disconnect') {
-     // the disconnection was initiated by the server, you need to reconnect manually
-     // socket.connect();
-   }
-   // else the socket will automatically try to reconnect
+
+   const checkClientConnectionStatusWithDelay = setTimeout(function() { //user has 10sec to log back in
+     console.log('check connection status on client side');
+     if (socket.connected) {
+       console.log('socket is connected again');
+       // in this case we reload on reconnect event
+       clearTimeout(checkClientConnectionStatusWithDelay);
+     } else {
+       // if (window.confirm('Ooops, it seems like you got disconnected. Reason: ' + reason + ' We will automatically reload the page for you.')) {
+       //   location.reload();
+       // }
+       console.log("--Disconnect - automatic reload");
+       location.reload();
+     }
+   }, 10000);
+
  });
 
 socket.on('reconnect_failed', function() {
@@ -86,9 +93,13 @@ socket.on('reconnect_failed', function() {
 });
 
 socket.on('reconnect', function() {
-  console.log("--Reconnect success ");
-  alert('Automatic reconnect success.');
+  // if (window.confirm('Automatic reconnect success. We will automatically reload the page for you.')) {
+  //   location.reload();
+  // }
+  console.log("--Reconnect success - automatic reload");
+  location.reload();
 });
+
 // NEW
 
 socket.on('game on or off', function(value) {
@@ -134,7 +145,6 @@ socket.on('player logout', function(player) {
 });
 
 socket.on('start game', function(msg) {
-  console.log('start game');
   sessionStorage.setItem('scrabbleLogin', true);
   $('.loginContainer #waitPanel').empty();
   $('.loginContainer #waitPanel').append($('<p>').text(msg));
@@ -145,7 +155,6 @@ socket.on('start game', function(msg) {
 socket.on('save storage', function(socketID) {
   sessionStorage.setItem('scrabbleID', socketID);
   // console.log('playerId: ' + sessionStorage.getItem('playerId'));
-  // localStorage.removeItem('playerId');
 });
 
 socket.on('update letterstack', function(letters) {
@@ -166,7 +175,7 @@ socket.on('update letterstack', function(letters) {
             destinationCell.append('<button type="button" class="tile" data-letter="' + letter.letter + '" data-value="' + letter.value + '">' + letter.letter + '<sub>' + letter.value + '</sub></button>');
             destinationCell.addClass("taken");
     } else {
-      console.log('not valid letter');
+      console.log('not valid letter', letter);
     }
 
 
@@ -180,8 +189,6 @@ socket.on('update remaining letters', function(number) {
 });
 
 socket.on('update points', function(result) {
-  console.log("RESULT");
-  console.log(result);
   $(".otherPlayers table.results tr:last td:nth-of-type(" + (result.player + 1) + ") ").append(result.points);
 });
 
@@ -380,14 +387,9 @@ $("#finishTurn").click(function() {
 
   //NEW
   let missingLetters = [];
-  console.log('empty positions');
   $(".letterStack .cell:not(.taken)").each(function() {
-    console.log($(this).attr('data-pos'));
     missingLetters.push(parseInt($(this).attr('data-pos'))-1); //we transmit -1 because afterwards we work with the numbers as positions in the letterStack array
   });
-  console.log('---missing letters---');
-  console.log(missingLetters);
-  //NEW
 
   yourTurn = false;
   $("#swapLetters").addClass("d-none");
@@ -622,7 +624,6 @@ socket.on('show whose turn', function(nextPlayerIndex) {
   $(".otherPlayers table.results tr.players th span").each(function() {
     $(this).removeClass("current");
   });
-  console.log("nextPlayerIndex: " + nextPlayerIndex);
   $(".otherPlayers table.results tr.players th:nth-child(" + nextPlayerIndex + ") span").addClass("current");
 
 });
@@ -657,6 +658,8 @@ socket.on('game ended', function(endGameAction) {
 });
 
 function redirectToHome() {
+  sessionStorage.removeItem('scrabbleLogin');
+  sessionStorage.removeItem('scrabbleID');
   var re = new RegExp(/^.*\//);
   baseURL = re.exec(window.location.href);
   window.location.href = baseURL;

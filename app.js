@@ -44,28 +44,12 @@ server.listen(process.env.PORT || 3000, function() {
 io.on('connection', function(socket) {
   console.log('---User connected');
 
-  /* NEW */
   socket.on('check if active player', function(oldSocketID, callback) {
-    console.log('check if active player');
-    console.log(oldSocketID);
-    console.log('new socket id: ', socket.id);
-    console.log('players when check: ', players);
-    const filteredPlayerIndex = findPlayer.findPlayerFromSocketID(oldSocketID, players);
-    console.log('filteredPlayerIndex when reload', filteredPlayerIndex);
+    const filteredPlayerIndex = findPlayer.findPlayerFromSocketID(oldSocketID, players); //lookup based on old socketID
     if (filteredPlayerIndex >= 0) {
-      // console.log('player found', players[filteredPlayerIndex]);
-      console.log('changing socketID in players[] of player ' + filteredPlayerIndex);
+      //update socketID of previously logged out player
       players[filteredPlayerIndex].socketID = socket.id;
       socket.join("family-scrabble");
-      // console.log('player found after change', players[filteredPlayerIndex]);
-      console.log('players after reload: ', players);
-      console.log('room when reload', io.sockets.adapter.rooms['family-scrabble']);
-      console.log('currentTurn', currentTurn);
-      // let nextPlayerID = currentTurn % players.length;
-      // const socketIdOfNextPlayer = players[nextPlayerID].socketID;
-      console.log('nextPlayerID', currentTurn % players.length);
-      console.log('socketIdOfNextPlayer', players[currentTurn % players.length].socketID);
-      console.log('this socket', socket.id);
       let data = {
         newSocketID: socket.id,
         name: players[filteredPlayerIndex].name,
@@ -80,8 +64,8 @@ io.on('connection', function(socket) {
       players.forEach(function(player, index) {
         socket.emit("show other players", player.name);
       });
-      io.emit('show whose turn', (currentTurn % players.length)+1);
-      for (var i = 0; i < (Math.floor(currentTurn/players.length)+1) ; i++) {
+      io.emit('show whose turn', (currentTurn % players.length) + 1);
+      for (var i = 0; i < (Math.floor(currentTurn / players.length) + 1); i++) {
         socket.emit('update results table with new row', players.length);
         players.forEach(function(player) {
           socket.emit('update points', {
@@ -92,10 +76,7 @@ io.on('connection', function(socket) {
       }
       // update board
       const keys = Object.keys(boardState);
-      console.log('keys', keys);
-      keys.forEach(function(key, index){
-        console.log('item', key);
-        console.log('item values', boardState[key]);
+      keys.forEach(function(key, index) {
         let placedTile = {
           letter: boardState[key].letter,
           value: boardState[key].value,
@@ -109,7 +90,6 @@ io.on('connection', function(socket) {
       callback(false);
     }
   });
-  /* NEW */
 
   if (gameOn) {
     // notify client (only the one)
@@ -117,19 +97,11 @@ io.on('connection', function(socket) {
     socket.emit('game full', 'A játék épp folyamatban van. Próbálkozz később!');
   }
 
-  socket.on('reconnect_failed', function() {
-    console.log("--Reconnect failed for user " + socket.id);
-  });
-
-  socket.on('reconnect', function() {
-    console.log("--Reconnect success " + socket.id);
-  });
-
   socket.on('disconnect', function(reason) {
     console.log('---User disconnected because ' + reason);
+    // check if player is in players array
+    const filteredPlayerIndex = findPlayer.findPlayerFromSocketID(socket.id, players);
     if (!gameOn) {
-      // check if player is in players array
-      const filteredPlayerIndex = findPlayer.findPlayerFromSocketID(socket.id, players);
       if (filteredPlayerIndex >= 0) { //do this only if player is in players array
         const loggedOutUser = {
           index: filteredPlayerIndex,
@@ -141,23 +113,31 @@ io.on('connection', function(socket) {
       }
 
     } else if (gameOn && currentTurn >= 0) { //if gameOn
-      //commented out for session issue
-      /*console.log('---DISCONNECT WHEN GAME ON---');
-      console.log(players);
-      // check if player is in players array
-      const filteredPlayerIndex = findPlayer.findPlayerFromSocketID(socket.id, players);
-      if (filteredPlayerIndex >= 0) {
-        let newEndGameAction = new EndGameAction("logout", players[filteredPlayerIndex].name);
+        console.log('User disconnected because ' + reason + ' while game on');
 
-        // reset variables
-        shuffledLetters = [];
-        players = [];
-        currentTurn = 0;
-        gameOn = false;
-        boardState = {};
-        io.emit('game on or off', false); //push end of game state to all connections
-        io.in('family-scrabble').emit('game ended', newEndGameAction);
-      }*/
+        const checkConnectionStatusWithDelay = setTimeout(function() { //user has 30sec to log back in
+          if (filteredPlayerIndex >= 0) { //do this only if player is in players array
+            // check if game room contains socket it - if reconnection was susccessful, players[] will have been updated with the new socketID => user can be found
+            if (io.sockets.adapter.rooms['family-scrabble'] && io.sockets.adapter.rooms['family-scrabble'].sockets[players[filteredPlayerIndex].socketID]) {
+              console.log('Player ' + filteredPlayerIndex + ' is back in after temporary disconnect');
+              clearTimeout(checkConnectionStatusWithDelay);
+            } else {
+              console.log('players', players);
+              console.log('Player ' + filteredPlayerIndex + ' has not beeen reachable for 30sec. Game is ending.');
+                clearTimeout(checkConnectionStatusWithDelay);
+                let newEndGameAction = new EndGameAction("logout", players[filteredPlayerIndex].name);
+
+                // reset variables
+                shuffledLetters = [];
+                players = [];
+                currentTurn = 0;
+                gameOn = false;
+                boardState = {};
+                io.emit('game on or off', false); //push end of game state to all connections
+                io.in('family-scrabble').emit('game ended', newEndGameAction);
+            }
+          }
+        }, 30000);
 
     }
   });
@@ -189,7 +169,6 @@ io.on('connection', function(socket) {
   });
 
   socket.on('deal', function(playerName) {
-    console.log('socketID: ', socket.id);
     let dealing = shuffle.dealAtStartForPlayer(shuffledLetters, letterStackPerPlayer);
     let newPlayer = new Player(playerName, players.length, socket.id, dealing.letterStackToBeDealt);
     shuffledLetters = dealing.shuffledLettersAfterDealing;
@@ -199,14 +178,9 @@ io.on('connection', function(socket) {
 
     //find player based on socket id
     const filteredPlayerIndex = findPlayer.findPlayerFromSocketID(socket.id, players);
-    console.log('players in deal', players);
-    console.log('filteredPlayerIndex in deal', filteredPlayerIndex);
-    console.log('maxplayers-1', maxPlayers - 1);
 
     // do this when the last player gets dealt
     if (filteredPlayerIndex === (maxPlayers - 1)) {
-      console.log('LAST PLAYER DEALING');
-      console.log('players', players);
       players.forEach(function(player, index) {
         io.to(player.socketID).emit('save storage', player.socketID);
         io.in('family-scrabble').emit("show other players", player.name);
@@ -228,30 +202,30 @@ io.on('connection', function(socket) {
   });
 
   socket.on('place tile', function(placedTile) {
-    console.log('placed letter', placedTile);
-    console.log('boardState before', boardState);
     const filteredPlayerIndex = findPlayer.findPlayerFromSocketID(socket.id, players);
-    console.log('player in place tile', filteredPlayerIndex);
-    console.log('letterstack before place tile', players[filteredPlayerIndex].letterStack);
 
     if (placedTile.action === "add") {
-      boardState[placedTile.destID] = {letter: placedTile.letter, value: placedTile.value};
-      players[filteredPlayerIndex].letterStack[parseInt(placedTile.sourceID)-1] = '';
+      boardState[placedTile.destID] = {
+        letter: placedTile.letter,
+        value: placedTile.value
+      };
+      players[filteredPlayerIndex].letterStack[parseInt(placedTile.sourceID) - 1] = '';
       socket.to('family-scrabble').emit('get added tile', placedTile);
     } else if (placedTile.action === "move") {
       delete boardState[placedTile.sourceID];
-      boardState[placedTile.destID] = {letter: placedTile.letter, value: placedTile.value};
-      socket.to('family-scrabble').emit('get moved tile', placedTile);
-    } else if (placedTile.action === "remove") {
-      players[filteredPlayerIndex].letterStack[parseInt(placedTile.destID)-1] = {
+      boardState[placedTile.destID] = {
         letter: placedTile.letter,
         value: placedTile.value
-      }
+      };
+      socket.to('family-scrabble').emit('get moved tile', placedTile);
+    } else if (placedTile.action === "remove") {
+      players[filteredPlayerIndex].letterStack[parseInt(placedTile.destID) - 1] = {
+        letter: placedTile.letter,
+        value: placedTile.value
+      };
       delete boardState[placedTile.sourceID];
       socket.to('family-scrabble').emit('get removed tile', placedTile);
     }
-console.log('boardState after', boardState);
-console.log('letterstack after place tile', players[filteredPlayerIndex].letterStack);
 
   });
 
@@ -266,36 +240,25 @@ console.log('letterstack after place tile', players[filteredPlayerIndex].letterS
   });
 
   socket.on('finish turn', function(missingLetterPositions) {
-    let dealtLetters = [];
-    //
     const filteredPlayerIndex = findPlayer.findPlayerFromSocketID(socket.id, players); //current player
-    console.log('filteredPlayerIndex when finish turn: ' + filteredPlayerIndex);
     //
     for (var i = 0; i < missingLetterPositions.length; i++) {
       if (shuffledLetters.length > 0) {
         let newLetter = shuffledLetters.shift(); //new
-        dealtLetters.push(newLetter);
-        //NEW
+        // push new letter to players array letterStack property
         players[filteredPlayerIndex].letterStack[missingLetterPositions[i]] = newLetter;
       } else {
         break;
       }
     }
-    // push new letters to players array letterStack property
-    console.log('dealtLetters', dealtLetters);
-    console.log('FINISH: ', players);
-    console.log(players[filteredPlayerIndex].letterStack);
-    //
-    socket.emit('update letterstack', players[filteredPlayerIndex].letterStack); //dealtLetters obsolete?
+
+    socket.emit('update letterstack', players[filteredPlayerIndex].letterStack);
     socket.emit('count points');
     //fix all tiles in boardState - at the moment disregarding which tiles are fixed in the DOM, as this info is not being transmitted at the moment
     const keys = Object.keys(boardState);
-    console.log('keys', keys);
-    console.log('boardstate before fixing tiles', boardState);
-    keys.forEach(function(key, index){
+    keys.forEach(function(key, index) {
       boardState[key].fixed = true;
     });
-    console.log('boardstate after fixing tiles', boardState);
     io.emit('fix placed tiles');
     io.emit('update remaining letters', shuffledLetters.length);
 
@@ -311,19 +274,15 @@ console.log('letterstack after place tile', players[filteredPlayerIndex].letterS
   socket.on('submit points of round', function(pointsSubmitted) {
     const filteredPlayerIndex = findPlayer.findPlayerFromSocketID(socket.id, players);
     let pointArrayOfPlayer = players[filteredPlayerIndex].points;
-    console.log('points before', pointArrayOfPlayer);
     if (pointArrayOfPlayer.length === 0) {
       pointArrayOfPlayer.push(pointsSubmitted);
     } else {
       pointArrayOfPlayer.push(parseInt(pointArrayOfPlayer[pointArrayOfPlayer.length - 1]) + parseInt(pointsSubmitted));
     }
-    console.log('points after', pointArrayOfPlayer);
-    console.log('sum before result', parseInt(pointArrayOfPlayer[pointArrayOfPlayer.length - 1]));
     let result = {
       player: filteredPlayerIndex,
       points: parseInt(pointArrayOfPlayer[pointArrayOfPlayer.length - 1])
     };
-    console.log('result', result);
     io.in('family-scrabble').emit('update points', result);
     if (currentTurn % players.length === 0) {
       io.in('family-scrabble').emit('update results table with new row', players.length);
@@ -370,7 +329,6 @@ function EndGameAction(action, initiatorName) {
 }
 
 app.get("/board", function(req, res) {
-  console.log('---GET BOARD---');
   res.render("board", {
     firstName: '' //at this point we don't know who this is
   });
