@@ -33,7 +33,7 @@ let shuffledLetters = [];
 let players = [];
 let currentTurn = -1;
 const letterStackPerPlayer = 7;
-const maxPlayers = 2;
+const maxPlayers = 3;
 let gameOn = false;
 let boardState = {};
 
