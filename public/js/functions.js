@@ -13,11 +13,46 @@ $(window).on('load', function(e) {
     }
   }
 
-  // BOARD view
-  if ($('#board').length > 0) {
-    currentPlayerName = $("#playerName").text().trim();
-    socket.emit('deal', currentPlayerName);
+  if (sessionStorage.getItem('scrabbleLogin')) { //set temporarily at "start game" so we know who to show the board to and who to shoo away
+    console.log('login active');
+    // BOARD view
+    if ($('#board').length > 0) {
+      currentPlayerName = $("#playerName").text().trim();
+      socket.emit('deal', currentPlayerName);
+    }
+    sessionStorage.removeItem('scrabbleLogin');
+  } else {
+    console.log('you are not due to log in');
+    //TODO
+    // game full / ongoing
   }
+
+  if (sessionStorage.getItem('scrabbleID')) { //if exists - we set it when dealing, so if you just call 'board' this is false
+    console.log('sessionStorage item exists');
+    socket.emit('check if active player', sessionStorage.getItem('scrabbleID'), function(data) {
+      console.log(data);
+      if (data) {
+        console.log('data transmitted: ', data);
+        sessionStorage.setItem('scrabbleID', data.newSocketID);
+        // set name
+        $('#playerName').text(data.name);
+        // set turn
+        if (data.yourTurn == true) {
+          yourTurn = true;
+          $("#swapLetters").removeClass("d-none");
+          $("#finishTurn").removeClass("d-none");
+        }
+      } else {
+        console.log('user not found');
+
+      }
+    });
+  } else {
+    // TODO
+  }
+
+
+
 
 });
 
@@ -35,6 +70,26 @@ $("#loginForm").submit(function(event) {
     socket.emit('player login', playerName);
   }
 });
+
+ // NEW
+ socket.on('disconnect', (reason) => {
+   alert('Ooops, it seems like you got disconnected. Reason:' + reason + '<br> Please reload the page.');
+   if (reason === 'io server disconnect') {
+     // the disconnection was initiated by the server, you need to reconnect manually
+     // socket.connect();
+   }
+   // else the socket will automatically try to reconnect
+ });
+
+socket.on('reconnect_failed', function() {
+  console.log("--Reconnect failed for user ");
+});
+
+socket.on('reconnect', function() {
+  console.log("--Reconnect success ");
+  alert('Automatic reconnect success.');
+});
+// NEW
 
 socket.on('game on or off', function(value) {
   if (value) {
@@ -79,23 +134,42 @@ socket.on('player logout', function(player) {
 });
 
 socket.on('start game', function(msg) {
+  console.log('start game');
+  sessionStorage.setItem('scrabbleLogin', true);
   $('.loginContainer #waitPanel').empty();
   $('.loginContainer #waitPanel').append($('<p>').text(msg));
   gameOn = true;
   $("#loginForm").submit();
 });
 
+socket.on('save storage', function(socketID) {
+  sessionStorage.setItem('scrabbleID', socketID);
+  // console.log('playerId: ' + sessionStorage.getItem('playerId'));
+  // localStorage.removeItem('playerId');
+});
+
 socket.on('update letterstack', function(letters) {
   $.each(letters, function(index, letter) {
 
-    $(".letterStack .cell").each(function(cell) {
-      if ($(this).children().length === 0) {
-        $(this).append('<button type="button" class="tile" data-letter="' + letter.letter + '" data-value="' + letter.value + '">' + letter.letter + '<sub>' + letter.value + '</sub></button>');
-        $(this).addClass("taken");
-        return false;
-      }
+      /*$(".letterStack .cell").each(function(cell) {
+        if ($(this).children().length === 0) {
+          $(this).append('<button type="button" class="tile" data-letter="' + letter.letter + '" data-value="' + letter.value + '">' + letter.letter + '<sub>' + letter.value + '</sub></button>');
+          $(this).addClass("taken");
+          return false;
+        }
 
-    });
+      });*/
+
+          if (letter instanceof Object) {
+            let destinationCell = $('.letterStack .cell:nth-of-type(' + (index+1) + ')');
+            destinationCell.empty();
+            destinationCell.append('<button type="button" class="tile" data-letter="' + letter.letter + '" data-value="' + letter.value + '">' + letter.letter + '<sub>' + letter.value + '</sub></button>');
+            destinationCell.addClass("taken");
+    } else {
+      console.log('not valid letter');
+    }
+
+
 
   });
 
@@ -262,6 +336,10 @@ socket.on('get added tile', function(placedTile) {
   $(".scrabbleBoard .cell-" + (placedTile.destID)).append('<button type="button" class="tile" data-letter="' + placedTile.letter + '" data-value="' + placedTile.value + '">' + placedTile.letter + '<sub>' + placedTile.value + '</sub></button>');
   $(".scrabbleBoard .cell-" + (placedTile.destID)).addClass("taken");
 
+  if (placedTile.fixed == true) { //new
+    $(".scrabbleBoard .cell-" + (placedTile.destID) + " button.tile").addClass("fixed");
+  }
+
 });
 
 socket.on('get moved tile', function(placedTile) {
@@ -292,17 +370,30 @@ $("#finishTurn").click(function() {
       };
 
       swappedLetters.push(swappedLetter);
+      $(this).closest('.cell').removeClass('taken');
       $(this).remove();
     });
 
-    socket.emit('swapping letters', swappedLetters);
+    socket.emit('swapping letters', swappedLetters); //this inserts the letters back into the shuffled letters array before we get the swapped letters
 
   }
+
+  //NEW
+  let missingLetters = [];
+  console.log('empty positions');
+  $(".letterStack .cell:not(.taken)").each(function() {
+    console.log($(this).attr('data-pos'));
+    missingLetters.push(parseInt($(this).attr('data-pos'))-1); //we transmit -1 because afterwards we work with the numbers as positions in the letterStack array
+  });
+  console.log('---missing letters---');
+  console.log(missingLetters);
+  //NEW
+
   yourTurn = false;
   $("#swapLetters").addClass("d-none");
   $("#finishTurn").addClass("d-none");
-  let remainingLetters = $(".letterStack button.tile").length;
-  socket.emit('finish turn', remainingLetters);
+  // let remainingLetters = $(".letterStack button.tile").length;
+  socket.emit('finish turn', missingLetters);
 });
 
 function checkNeighboringCellForFixedTiles(rowNum, colNum, direction, foundCounter = 0, pointsCountedSoFar = 0) {
