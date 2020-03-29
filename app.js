@@ -33,7 +33,7 @@ let shuffledLetters = [];
 let players = [];
 let currentTurn = -1;
 const letterStackPerPlayer = 7;
-const maxPlayers = 3;
+const maxPlayers = 4;
 let gameOn = false;
 let boardState = {};
 
@@ -116,7 +116,7 @@ io.on('connection', function(socket) {
         console.log('User disconnected because ' + reason + ' while game on');
 
         const checkConnectionStatusWithDelay = setTimeout(function() { //user has 30sec to log back in
-          if (filteredPlayerIndex >= 0) { //do this only if player is in players array
+          if (gameOn && filteredPlayerIndex >= 0) { //do this only if player is in players array //check also if game is on(because of delay it might be over already)
             // check if game room contains socket it - if reconnection was susccessful, players[] will have been updated with the new socketID => user can be found
             if (io.sockets.adapter.rooms['family-scrabble'] && io.sockets.adapter.rooms['family-scrabble'].sockets[players[filteredPlayerIndex].socketID]) {
               console.log('Player ' + filteredPlayerIndex + ' is back in after temporary disconnect');
@@ -136,6 +136,9 @@ io.on('connection', function(socket) {
                 io.emit('game on or off', false); //push end of game state to all connections
                 io.in('family-scrabble').emit('game ended', newEndGameAction);
             }
+          } else { //of not 'gameOn && filteredPlayerIndex >= 0'
+            console.log('setTimeout: game is not on anymore or player not found');
+            clearTimeout(checkConnectionStatusWithDelay);
           }
         }, 30000);
 
@@ -342,7 +345,6 @@ app.get("/", function(req, res) {
 
 
 app.post("/board", function(req, res) {
-
   res.render("board", {
     firstName: req.body.firstName
   });
