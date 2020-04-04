@@ -53,18 +53,36 @@ $(window).on('load', function(e) {
 
 });
 
+function checkIfFirstNameValid() {
+  var el = $('#firstName');
+  if (el.val().trim() === "") {
+  el.addClass("is-invalid");
+  return false;
+  } else {
+    el.removeClass("is-invalid");
+    return true;
+  }
+}
+
+
+$( "#firstName" ).keyup(function() {
+  checkIfFirstNameValid();
+});
+
 
 $("#loginForm").submit(function(event) {
   if (gameOn) {
     // Form submitted for real
   } else {
     event.preventDefault();
-    // Form submitted, but only login is happening
-    $(".loginContainer form").addClass("d-none");
-    $(".loginContainer #waitPanel").removeClass("d-none");
-    $(".loginContainer .lds-roller").removeClass("d-none");
-    playerName = $('#firstName').val();
-    socket.emit('player login', playerName);
+    if (checkIfFirstNameValid()) {
+      // Form submitted, but only login is happening
+      $(".loginContainer form").addClass("d-none");
+      $(".loginContainer #waitPanel").removeClass("d-none");
+      $(".loginContainer .lds-roller").removeClass("d-none");
+      playerName = $('#firstName').val();
+      socket.emit('player login', playerName);
+    }
   }
 });
 
