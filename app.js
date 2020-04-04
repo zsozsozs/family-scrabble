@@ -101,7 +101,6 @@ io.on('connection', function(socket) {
     console.log('---User disconnected because ' + reason);
     // check if player is in players array
     const filteredPlayerIndex = findPlayer.findPlayerFromSocketID(socket.id, players);
-    console.log('filteredPlayerIndex', filteredPlayerIndex);
     if (!gameOn) {
       if (filteredPlayerIndex >= 0) { //do this only if player is in players array
         const loggedOutUser = {
