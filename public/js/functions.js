@@ -6,13 +6,18 @@ let swapMode = false;
 let currentPlayerName;
 
 $(window).on('load', function(e) {
+
+
+
   // LOGIN view
-  if (!gameOn) {
+  if ($('#playerLogin').length > 0) {
+    // reset variables in case
     if ($('#login .loginPlayers ul#players li').length > 0) {
       $("#login .loginPlayers").removeClass("d-none");
     }
   }
 
+  // BOARD VIEW
   if ($('#board').length > 0) {
 
 
@@ -178,25 +183,12 @@ socket.on('save storage', function(socketID) {
 socket.on('update letterstack', function(letters) {
   $.each(letters, function(index, letter) {
 
-      /*$(".letterStack .cell").each(function(cell) {
-        if ($(this).children().length === 0) {
-          $(this).append('<button type="button" class="tile" data-letter="' + letter.letter + '" data-value="' + letter.value + '">' + letter.letter + '<sub>' + letter.value + '</sub></button>');
-          $(this).addClass("taken");
-          return false;
-        }
-
-      });*/
-
-          if (letter instanceof Object) {
+          if (letter instanceof Object) { // do this only if it is a valid letter
             let destinationCell = $('.letterStack .cell:nth-of-type(' + (index+1) + ')');
             destinationCell.empty();
             destinationCell.append('<button type="button" class="tile" data-letter="' + letter.letter + '" data-value="' + letter.value + '">' + letter.letter + '<sub>' + letter.value + '</sub></button>');
             destinationCell.addClass("taken");
-    } else {
-      console.log('not valid letter', letter);
     }
-
-
 
   });
 
@@ -207,7 +199,20 @@ socket.on('update remaining letters', function(number) {
 });
 
 socket.on('update points', function(result) {
-  $(".otherPlayers table.results tr:last td:nth-of-type(" + (result.player + 1) + ") ").append(result.points);
+  if (result.hasOwnProperty('deduction')) { // at the end of the game
+    $(".otherPlayers table.results tr:last td:nth-of-type(" + (result.player + 1) + ") ").append(result.deduction + "<br><b>" + result.points + "</b>");
+  } else { //no deduction - DEFAULT case
+    $(".otherPlayers table.results tr:last td:nth-of-type(" + (result.player + 1) + ") ").append(result.points);
+  }
+  if (result.hasOwnProperty('lettersLeftInLetterstack')) { // display how many letters left (stack not full)
+    let cellEl = $(".otherPlayers table.results tr.players th:nth-child(" + (result.player + 1) + ")");
+    let spanEl = $(".otherPlayers table.results tr.players th:nth-child(" + (result.player + 1) + ") span.remaining");
+    if (spanEl.length > 0) {
+      spanEl.text("(" + result.lettersLeftInLetterstack + ")");
+    } else {
+      cellEl.append('<span class="remaining">(' + result.lettersLeftInLetterstack + ')</span>');
+    }
+  }
 });
 
 $(".cell").on("click", "button.tile", function(event) {
@@ -627,8 +632,12 @@ socket.on('start turn', function() {
   $("#finishTurn").removeClass("d-none");
 });
 
-socket.on('update results table with new row', function(noOfPlayers) {
-  $(".otherPlayers table.results").append("<tr></tr>");
+socket.on('update results table with new row', function(noOfPlayers, className = "") {
+  if (className !== "") {
+    $(".otherPlayers table.results").append('<tr class="' + className + '"></tr>');
+  } else {
+    $(".otherPlayers table.results").append("<tr></tr>");
+  }
   for (var i = 0; i < noOfPlayers; i++) {
     $(".otherPlayers table.results tr:last").append("<td></td>");
   }
@@ -671,6 +680,9 @@ socket.on('game ended', function(endGameAction) {
       $('#gameEndPlayerName').text(endGameAction.initiatorName);
       $(".gameEndPlayer").removeClass("d-none");
     }
+  } else if ("finishedgame") {
+    $("table.results").clone().appendTo(".finishGame");
+    $(".finishGame").removeClass("d-none");
   }
 
 });

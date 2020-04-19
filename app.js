@@ -62,16 +62,22 @@ io.on('connection', function(socket) {
       socket.emit('update remaining letters', shuffledLetters.length);
       // update other players table
       players.forEach(function(player, index) {
-        socket.emit("show other players", player.name);
+        socket.emit("show other players", player.name, 7);
       });
       io.emit('show whose turn', (currentTurn % players.length) + 1);
       for (var i = 0; i < (Math.floor(currentTurn / players.length) + 1); i++) {
         socket.emit('update results table with new row', players.length);
         players.forEach(function(player) {
-          socket.emit('update points', {
+          let resultofRound = {
             player: parseInt(player.order),
             points: player.points[i]
-          });
+          }
+          let lettersLeftInLetterstack = calculateLettersLeftInLetterstack(player.letterStack);
+          // only do this is if letterstack is not full and only submit this in the update of the last turn
+          if (lettersLeftInLetterstack < letterStackPerPlayer && i === Math.floor(currentTurn / players.length)) {
+            resultofRound.lettersLeftInLetterstack = lettersLeftInLetterstack;
+          }
+          socket.emit('update points', resultofRound);
         });
       }
       // update board
@@ -113,34 +119,30 @@ io.on('connection', function(socket) {
       }
 
     } else if (gameOn && currentTurn >= 0) { //if gameOn
-        console.log('User disconnected because ' + reason + ' while game on');
+      console.log('User disconnected because ' + reason + ' while game on');
 
-        const checkConnectionStatusWithDelay = setTimeout(function() { //user has 30sec to log back in
-          if (gameOn && filteredPlayerIndex >= 0) { //do this only if player is in players array //check also if game is on(because of delay it might be over already)
-            // check if game room contains socket it - if reconnection was susccessful, players[] will have been updated with the new socketID => user can be found
-            if (io.sockets.adapter.rooms['family-scrabble'] && io.sockets.adapter.rooms['family-scrabble'].sockets[players[filteredPlayerIndex].socketID]) {
-              console.log('Player ' + filteredPlayerIndex + ' is back in after temporary disconnect');
-              clearTimeout(checkConnectionStatusWithDelay);
-            } else {
-              console.log('players', players);
-              console.log('Player ' + filteredPlayerIndex + ' has not beeen reachable for 30sec. Game is ending.');
-                clearTimeout(checkConnectionStatusWithDelay);
-                let newEndGameAction = new EndGameAction("logout", players[filteredPlayerIndex].name);
-
-                // reset variables
-                shuffledLetters = [];
-                players = [];
-                currentTurn = 0;
-                gameOn = false;
-                boardState = {};
-                io.emit('game on or off', false); //push end of game state to all connections
-                io.in('family-scrabble').emit('game ended', newEndGameAction);
-            }
-          } else { //of not 'gameOn && filteredPlayerIndex >= 0'
-            console.log('setTimeout: game is not on anymore or player not found');
+      const checkConnectionStatusWithDelay = setTimeout(function() { //user has 30sec to log back in
+        if (gameOn && filteredPlayerIndex >= 0) { //do this only if player is in players array //check also if game is on(because of delay it might be over already)
+          // check if game room contains socket it - if reconnection was susccessful, players[] will have been updated with the new socketID => user can be found
+          if (io.sockets.adapter.rooms['family-scrabble'] && io.sockets.adapter.rooms['family-scrabble'].sockets[players[filteredPlayerIndex].socketID]) {
+            console.log('Player ' + filteredPlayerIndex + ' is back in after temporary disconnect');
             clearTimeout(checkConnectionStatusWithDelay);
+          } else {
+            console.log('players', players);
+            console.log('Player ' + filteredPlayerIndex + ' has not beeen reachable for 30sec. Game is ending.');
+            clearTimeout(checkConnectionStatusWithDelay);
+            let newEndGameAction = new EndGameAction("logout", players[filteredPlayerIndex].name);
+
+            // reset variables
+            resetVariables();
+            io.emit('game on or off', false); //push end of game state to all connections
+            io.in('family-scrabble').emit('game ended', newEndGameAction);
           }
-        }, 30000);
+        } else { //if not 'gameOn && filteredPlayerIndex >= 0'
+          console.log('setTimeout: game is not on anymore or player not found');
+          clearTimeout(checkConnectionStatusWithDelay);
+        }
+      }, 30000);
 
     }
   });
@@ -286,19 +288,67 @@ io.on('connection', function(socket) {
       player: filteredPlayerIndex,
       points: parseInt(pointArrayOfPlayer[pointArrayOfPlayer.length - 1])
     };
+    // check if player has <7 letters
+    let lettersLeftInLetterstack = calculateLettersLeftInLetterstack(players[filteredPlayerIndex].letterStack);
+    if (lettersLeftInLetterstack < letterStackPerPlayer) {
+      result.lettersLeftInLetterstack = lettersLeftInLetterstack;
+    }
     io.in('family-scrabble').emit('update points', result);
-    if (currentTurn % players.length === 0) {
-      io.in('family-scrabble').emit('update results table with new row', players.length);
+    if (lettersLeftInLetterstack === 0) { //end of game
+      // deduct everyone's remaining letters' points from their score
+      io.in('family-scrabble').emit('update results table with new row', players.length, "end-result");
+      players.forEach(function(player, index) {
+        let pointsToDeduct = parseInt(sumUpPointsOfLettersLeftInLetterstack(player.letterStack));
+        // push end result to points array
+        player.points.push(parseInt(player.points[player.points.length - 1]) - pointsToDeduct);
+        io.in('family-scrabble').emit('update points', {
+          player: index,
+          points: parseInt(player.points[player.points.length - 1]),
+          deduction: +0 - pointsToDeduct
+        });
+      });
+
+      //update placements
+      let scores = players.map(player => {
+        return player.points[player.points.length - 1];
+      });
+
+      // sort in decreasing order
+      scores.sort((a, b) => a - b).reverse();
+      // remove duplicates
+      let cleanScores = scores.reduce(function(accumulator, currentValue) {
+        if (accumulator.indexOf(currentValue) === -1) {
+          accumulator.push(currentValue);
+        }
+        return accumulator;
+      }, []);
+      for (var i = 0; i < cleanScores.length; i++) {
+        players.forEach(function(player, index) {
+          if (player.points[player.points.length-1] === cleanScores[i]) {
+            player.placement = i+1; //currently placement data is not used
+          }
+        });
+      }
+
+      // invoke and of game modal
+      resetVariables();
+      let newEndGameAction = new EndGameAction("finishedgame");
+
+      setTimeout(function() { //do this in 5 sec so players can have a last look at the board
+        io.emit('game on or off', false); //push end of game state to all connections
+        io.in('family-scrabble').emit('game ended', newEndGameAction);
+      }, 5000);
+
+    } else { // if not end of game: add new line in results table for next round
+      if (currentTurn % players.length === 0) { //not end of game, prepare for next round iit was the last player
+        io.in('family-scrabble').emit('update results table with new row', players.length);
+      }
     }
   });
 
   socket.on('finish game', function(playerName) {
     // reset variables
-    shuffledLetters = [];
-    players = [];
-    currentTurn = -1;
-    gameOn = false;
-    boardState = {};
+    resetVariables();
     io.emit('game on or off', false);
 
     let newEndGameAction = new EndGameAction("endgame", playerName);
@@ -326,9 +376,30 @@ function Player(name, order, socketID, letterStack) {
   this.placement = 0;
 }
 
-function EndGameAction(action, initiatorName) {
-  this.action = action;
+function EndGameAction(action, initiatorName = "") {
+  this.action = action; //endgame, logout, finishgame
   this.initiatorName = initiatorName;
+}
+
+function resetVariables() {
+  // reset variables
+  shuffledLetters = [];
+  players = [];
+  currentTurn = 0;
+  gameOn = false;
+  boardState = {};
+}
+
+function calculateLettersLeftInLetterstack(letterstackArr) {
+  return letterstackArr.reduce((accumulator, currentValue) => {
+    return (currentValue) ? accumulator + 1 : accumulator;
+  }, 0);
+}
+
+function sumUpPointsOfLettersLeftInLetterstack(letterstackArr) {
+  return letterstackArr.reduce((accumulator, currentValue) => {
+    return (currentValue) ? accumulator + parseInt(currentValue.value) : accumulator;
+  }, 0);
 }
 
 app.get("/board", function(req, res) {
