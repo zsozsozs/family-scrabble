@@ -7,23 +7,40 @@ let currentPlayerName;
 
 $(window).on('load', function(e) {
 
-
-
   // LOGIN view
   if ($('#playerLogin').length > 0) {
-    // reset variables in case
+    // reset variables if user is not
+    if (sessionStorage.getItem('scrabbleID')) { // user is or was playing
+      socket.emit('check if active player',
+      sessionStorage.getItem('scrabbleID'), function(activePlayer) {
+        if (activePlayer) {
+          // redirect to board
+          var re = new RegExp(/^.*\//);
+          baseURL = re.exec(window.location.href);
+          window.location.href = baseURL + "/board";
+        } else {
+          console.log('Login: invalid scrabbleID: your ID is not from an ongoing game');
+          // happens e.g. when someone navigates away, meanwhile game ends and user comes back to login page
+          // reset sessionStorage
+          sessionStorage.removeItem('scrabbleLogin');
+          sessionStorage.removeItem('scrabbleID');
+        }
+      });
+    } else { // no scrabbleID in sessionStorage
+      socket.emit('get player list at login');
+
+    }
     if ($('#login .loginPlayers ul#players li').length > 0) {
       $("#login .loginPlayers").removeClass("d-none");
     }
   }
-
   // BOARD VIEW
   if ($('#board').length > 0) {
 
 
     if (sessionStorage.getItem('scrabbleID')) { //if exists - we set it when dealing, so if you just call 'board' this is false
       console.log('sessionStorage item exists');
-      socket.emit('check if active player', sessionStorage.getItem('scrabbleID'), function(data) {
+      socket.emit('check if active player and log back in', sessionStorage.getItem('scrabbleID'), function(data) {
         if (data) {
           sessionStorage.setItem('scrabbleID', data.newSocketID);
           // set name
@@ -35,7 +52,7 @@ $(window).on('load', function(e) {
             $("#finishTurn").removeClass("d-none");
           }
         } else {
-          console.log('unvalid scrabbleID: your ID is not from an ongoing game');
+          console.log('Board: invalid scrabbleID: your ID is not from an ongoing game');
           // when someone loses connection and reloads on board view
           //at this point the game is over
           redirectToHome(); //scrabbleID needs to be removed from sessionStorage - done by redirectToHome
@@ -199,19 +216,24 @@ socket.on('update remaining letters', function(number) {
 });
 
 socket.on('update points', function(result) {
-  if (result.hasOwnProperty('deduction')) { // at the end of the game
-    $(".otherPlayers table.results tr:last td:nth-of-type(" + (result.player + 1) + ") ").append(result.deduction + "<br><b>" + result.points + "</b>");
-  } else { //no deduction - DEFAULT case
-    $(".otherPlayers table.results tr:last td:nth-of-type(" + (result.player + 1) + ") ").append(result.points);
+  if (result.hasOwnProperty('points')) {
+    if (result.hasOwnProperty('deduction')) { // at the end of the game
+      $(".otherPlayers table.results tr:last td:nth-of-type(" + (result.player + 1) + ") ").append(result.deduction + "<br><b>" + result.points + "</b>");
+    } else { //no deduction - DEFAULT case
+      $(".otherPlayers table.results tr:last td:nth-of-type(" + (result.player + 1) + ") ").append(result.points);
+    }
   }
+  // handle remaining latters
+  let spanEl = $(".otherPlayers table.results tr.players th:nth-child(" + (result.player + 1) + ") span.remaining");
   if (result.hasOwnProperty('lettersLeftInLetterstack')) { // display how many letters left (stack not full)
     let cellEl = $(".otherPlayers table.results tr.players th:nth-child(" + (result.player + 1) + ")");
-    let spanEl = $(".otherPlayers table.results tr.players th:nth-child(" + (result.player + 1) + ") span.remaining");
     if (spanEl.length > 0) {
       spanEl.text("(" + result.lettersLeftInLetterstack + ")");
     } else {
       cellEl.append('<span class="remaining">(' + result.lettersLeftInLetterstack + ')</span>');
     }
+  } else { // no lettersLeftInLetterstack transmitted
+      spanEl.remove(); // in case the span element is there...
   }
 });
 

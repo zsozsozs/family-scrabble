@@ -47,6 +47,17 @@ io.on('connection', function(socket) {
   socket.on('check if active player', function(oldSocketID, callback) {
     const filteredPlayerIndex = findPlayer.findPlayerFromSocketID(oldSocketID, players); //lookup based on old socketID
     if (filteredPlayerIndex >= 0) {
+      console.log('ACTIVE PLAYER, YES');
+      callback(true);
+    } else {
+      console.log('NOT ACTIVE PLAYER, NO');
+      callback(false);
+    }
+  });
+
+  socket.on('check if active player and log back in', function(oldSocketID, callback) {
+    const filteredPlayerIndex = findPlayer.findPlayerFromSocketID(oldSocketID, players); //lookup based on old socketID
+    if (filteredPlayerIndex >= 0) {
       //update socketID of previously logged out player
       players[filteredPlayerIndex].socketID = socket.id;
       socket.join("family-scrabble");
@@ -65,17 +76,22 @@ io.on('connection', function(socket) {
         socket.emit("show other players", player.name, 7);
       });
       io.emit('show whose turn', (currentTurn % players.length) + 1);
-      for (var i = 0; i < (Math.floor(currentTurn / players.length) + 1); i++) {
+      // calculate ongoing round (1 round = 1 turn / player)
+      let roundNoInProgress = Math.floor(currentTurn / players.length);
+      console.log('ROUND', roundNoInProgress);
+      for (var i = 0; i <= roundNoInProgress; i++) {
         socket.emit('update results table with new row', players.length);
-        players.forEach(function(player) {
+        players.forEach(function(player, index) {
           let resultofRound = {
             player: parseInt(player.order),
-            points: player.points[i]
+            points: player.points[i] // is undefined if does not exist
           }
-          let lettersLeftInLetterstack = calculateLettersLeftInLetterstack(player.letterStack);
-          // only do this is if letterstack is not full and only submit this in the update of the last turn
-          if (lettersLeftInLetterstack < letterStackPerPlayer && i === Math.floor(currentTurn / players.length)) {
-            resultofRound.lettersLeftInLetterstack = lettersLeftInLetterstack;
+          if (i === roundNoInProgress) { //do this only at the last round
+            let lettersLeftInLetterstack = calculateLettersLeftInLetterstack(player.letterStack);
+            // only do this is if letterstack is not full AND do not submit it if it is the player's turn (in which case he could be putting down letters while we request the number of letters in his/her stack)
+            if (lettersLeftInLetterstack < letterStackPerPlayer && (currentTurn % players.length) !== index ) {
+              resultofRound.lettersLeftInLetterstack = lettersLeftInLetterstack;
+            }
           }
           socket.emit('update points', resultofRound);
         });
@@ -145,6 +161,12 @@ io.on('connection', function(socket) {
       }, 30000);
 
     }
+  });
+
+  socket.on('get player list at login', function() {
+    console.log('PLAYERS', players);
+    // update player list
+    socket.emit('update players', players);
   });
 
   socket.on('player login', function(playerName) {
