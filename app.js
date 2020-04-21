@@ -136,19 +136,15 @@ io.on('connection', function(socket) {
 
     } else if (gameOn && currentTurn >= 0) { //if gameOn
       console.log('User disconnected because ' + reason + ' while game on');
-
       const checkConnectionStatusWithDelay = setTimeout(function() { //user has 30sec to log back in
         if (gameOn && filteredPlayerIndex >= 0) { //do this only if player is in players array //check also if game is on(because of delay it might be over already)
           // check if game room contains socket it - if reconnection was susccessful, players[] will have been updated with the new socketID => user can be found
           if (io.sockets.adapter.rooms['family-scrabble'] && io.sockets.adapter.rooms['family-scrabble'].sockets[players[filteredPlayerIndex].socketID]) {
             console.log('Player ' + filteredPlayerIndex + ' is back in after temporary disconnect');
-            clearTimeout(checkConnectionStatusWithDelay);
           } else {
             console.log('players', players);
             console.log('Player ' + filteredPlayerIndex + ' has not beeen reachable for 30sec. Game is ending.');
-            clearTimeout(checkConnectionStatusWithDelay);
             let newEndGameAction = new EndGameAction("logout", players[filteredPlayerIndex].name);
-
             // reset variables
             resetVariables();
             io.emit('game on or off', false); //push end of game state to all connections
@@ -156,7 +152,6 @@ io.on('connection', function(socket) {
           }
         } else { //if not 'gameOn && filteredPlayerIndex >= 0'
           console.log('setTimeout: game is not on anymore or player not found');
-          clearTimeout(checkConnectionStatusWithDelay);
         }
       }, 30000);
 
