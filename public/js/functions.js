@@ -102,13 +102,13 @@ $("#loginForm").submit(function(event) {
       $(".loginContainer form").addClass("d-none");
       $(".loginContainer #waitPanel").removeClass("d-none");
       $(".loginContainer .lds-roller").removeClass("d-none");
-      playerName = $('#firstName').val();
-      socket.emit('player login', playerName);
       if ($('#noOfPlayers').length > 0) {
         setNoOfPlayers = Number($('#noOfPlayers').val());
         console.log(setNoOfPlayers);
         socket.emit('set maxPlayers', setNoOfPlayers);
       }
+      playerName = $('#firstName').val();
+      socket.emit('player login', playerName);
     }
   }
 });

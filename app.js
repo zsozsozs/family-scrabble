@@ -181,6 +181,7 @@ io.on('connection', function(socket) {
     if (players.length <= (maxPlayers - 1)) { //if game not yet full
       let newPlayer = new Player(playerName, players.length + 1, socket.id);
       players.push(newPlayer);
+      console.log("Number of players after login: " + players.length);
       // join game room
       socket.join("family-scrabble");
       //  notify everyone (except user logging in) of new player in game room
@@ -207,6 +208,7 @@ io.on('connection', function(socket) {
     if (setMaxPlayers < 1) {
       setMaxPlayers = Number(setNoOfPlayers);
       maxPlayers = setNoOfPlayers;
+      console.log("Max players set to: " + maxPlayers);
       //NICE TO HAVE: feedback to other players who got the field displayed as well and might have set something
       // ALSO: feedback re number of players
     }
