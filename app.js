@@ -15,6 +15,16 @@ app.use(lessMiddleware((__dirname + '/less'), {
   // only for development
   force: true
 }));
+app.use(function(req, res, next) {
+  const allowedOrigins = ['http://localhost:3000', 'http://family-scrabble.herokuapp.com'];
+const origin = req.headers.origin;
+if (allowedOrigins.includes(origin)) {
+     res.setHeader('Access-Control-Allow-Origin', origin);
+}
+  // res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+  // res.setHeader('Access-Control-Allow-Methods', 'POST, GET, PATCH, DELETE, OPTIONS');
+  next();
+});
 app.use(express.static("public"));
 app.use(bodyParser.urlencoded({
   extended: true
@@ -25,6 +35,7 @@ app.use(bodyParser.urlencoded({
 const server = require('http').createServer(app);
 // Instantiate Socket.IO hand have it listen on the Express/HTTP server
 // BEFORE const io = require('socket.io')(server);
+// Use the listen method to attach Socket.IO to a HTTP instance.
 let io = require('socket.io').listen(server);
 
 
@@ -33,7 +44,7 @@ let shuffledLetters = [];
 let players = [];
 let currentTurn = -1;
 const letterStackPerPlayer = 7;
-const maxPlayers = 4;
+const maxPlayers = 2;
 let gameOn = false;
 let boardState = {};
 
