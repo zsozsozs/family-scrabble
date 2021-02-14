@@ -44,7 +44,9 @@ let shuffledLetters = [];
 let players = [];
 let currentTurn = -1;
 const letterStackPerPlayer = 7;
-const maxPlayers = 2;
+const defaultMaxPlayers = 4;
+let setMaxPlayers = 0;
+let maxPlayers = defaultMaxPlayers;
 let gameOn = false;
 let boardState = {};
 
@@ -201,6 +203,15 @@ io.on('connection', function(socket) {
     }
   });
 
+  socket.on('set maxPlayers', function(setNoOfPlayers) {
+    if (setMaxPlayers < 1) {
+      setMaxPlayers = Number(setNoOfPlayers);
+      maxPlayers = setNoOfPlayers;
+      //NICE TO HAVE: feedback to other players who got the field displayed as well and might have set something
+      // ALSO: feedback re number of players
+    }
+  });
+
   socket.on('deal', function(playerName) {
     let dealing = shuffle.dealAtStartForPlayer(shuffledLetters, letterStackPerPlayer);
     let newPlayer = new Player(playerName, players.length, socket.id, dealing.letterStackToBeDealt);
@@ -214,6 +225,7 @@ io.on('connection', function(socket) {
 
     // do this when the last player gets dealt
     if (filteredPlayerIndex === (maxPlayers - 1)) {
+
       players.forEach(function(player, index) {
         io.to(player.socketID).emit('save storage', player.socketID);
         io.in('family-scrabble').emit("show other players", player.name);
@@ -221,6 +233,8 @@ io.on('connection', function(socket) {
 
       //first player should start the game when last player is in
       currentTurn = 0;
+      //shuffle players array
+      players = players.sort(() => Math.random() - 0.5);
       io.to(players[0].socketID).emit('start turn');
 
       io.emit('update remaining letters', shuffledLetters.length);
@@ -416,6 +430,8 @@ function resetVariables() {
   currentTurn = 0;
   gameOn = false;
   boardState = {};
+  maxPlayers = defaultMaxPlayers;
+  setMaxPlayers = 0;
 }
 
 function calculateLettersLeftInLetterstack(letterstackArr) {

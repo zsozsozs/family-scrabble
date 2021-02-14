@@ -104,6 +104,11 @@ $("#loginForm").submit(function(event) {
       $(".loginContainer .lds-roller").removeClass("d-none");
       playerName = $('#firstName').val();
       socket.emit('player login', playerName);
+      if ($('#noOfPlayers').length > 0) {
+        setNoOfPlayers = Number($('#noOfPlayers').val());
+        console.log(setNoOfPlayers);
+        socket.emit('set maxPlayers', setNoOfPlayers);
+      }
     }
   }
 });
@@ -156,6 +161,11 @@ socket.on('player login', function(username) {
 });
 
 socket.on('update players', function(players) {
+  if (players.length < 1) {
+    $(".loginContainer .noOfPlayers").removeClass("d-none");
+  } else {
+    $(".loginContainer .noOfPlayers").remove();
+  }
   if (players.length > 0) {
     $(".loginContainer .loginPlayers").removeClass("d-none");
   }
