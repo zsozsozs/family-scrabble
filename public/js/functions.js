@@ -102,12 +102,16 @@ $("#loginForm").submit(function(event) {
       $(".loginContainer form").addClass("d-none");
       $(".loginContainer #waitPanel").removeClass("d-none");
       $(".loginContainer .lds-roller").removeClass("d-none");
+      playerName = $('#firstName').val();
       if ($('#noOfPlayers').length > 0) {
         setNoOfPlayers = Number($('#noOfPlayers').val());
         console.log(setNoOfPlayers);
-        socket.emit('set maxPlayers', setNoOfPlayers);
+        let maxPlayersData = {
+          name: playerName,
+          maxPlayers: setNoOfPlayers
+        };
+        socket.emit('set maxPlayers', maxPlayersData);
       }
-      playerName = $('#firstName').val();
       socket.emit('player login', playerName);
     }
   }
@@ -158,6 +162,12 @@ socket.on('game on or off', function(value) {
 socket.on('player login', function(username) {
   $('.loginContainer #waitPanel').empty();
   $('.loginContainer #waitPanel').append($('<p>').text(username + " bejelentkezett."));
+});
+
+socket.on('display set max players', function(maxPlayersSetting) {
+  $('.loginContainer #playerNrPanel').empty();
+  $('.loginContainer #playerNrPanel').append($('<p>').text(maxPlayersSetting.setBy + " " + maxPlayersSetting.maxPlayers + " fős játékot választott."));
+  $(".loginContainer #playerNrPanel").removeClass("d-none");
 });
 
 socket.on('update players', function(players) {

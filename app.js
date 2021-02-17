@@ -46,6 +46,7 @@ let currentTurn = -1;
 const letterStackPerPlayer = 7;
 const defaultMaxPlayers = 4;
 let setMaxPlayers = 0;
+let setMaxPlayersBy = "";
 let maxPlayers = defaultMaxPlayers;
 let gameOn = false;
 let boardState = {};
@@ -184,6 +185,12 @@ io.on('connection', function(socket) {
       console.log("Number of players after login: " + players.length);
       // join game room
       socket.join("family-scrabble");
+      let maxPlayersSetting = {
+        maxPlayers: maxPlayers,
+        setBy: setMaxPlayersBy
+      };
+      console.log("maxPlayersSetting", maxPlayersSetting);
+      socket.emit("display set max players", maxPlayersSetting);
       //  notify everyone (except user logging in) of new player in game room
       socket.to('family-scrabble').emit('player login', playerName);
       // update everyone's player list
@@ -204,13 +211,12 @@ io.on('connection', function(socket) {
     }
   });
 
-  socket.on('set maxPlayers', function(setNoOfPlayers) {
-    if (setMaxPlayers < 1) {
-      setMaxPlayers = Number(setNoOfPlayers);
-      maxPlayers = setNoOfPlayers;
-      console.log("Max players set to: " + maxPlayers);
-      //NICE TO HAVE: feedback to other players who got the field displayed as well and might have set something
-      // ALSO: feedback re number of players
+  socket.on('set maxPlayers', function(maxPlayersData) {
+    if (setMaxPlayers < 1 || players.length < 1) { //if no explicit settting yet OR 1st player 
+      setMaxPlayers = Number(maxPlayersData.maxPlayers);
+      maxPlayers = setMaxPlayers;
+      setMaxPlayersBy = maxPlayersData.name;
+      //feedback to other players who got the field displayed as well and might have set something and general feedback re number of players and who set it -> when player logs in
     }
   });
 
@@ -434,6 +440,7 @@ function resetVariables() {
   boardState = {};
   maxPlayers = defaultMaxPlayers;
   setMaxPlayers = 0;
+  setMaxPlayersBy = "";
 }
 
 function calculateLettersLeftInLetterstack(letterstackArr) {
