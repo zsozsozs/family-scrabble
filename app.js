@@ -212,7 +212,7 @@ io.on('connection', function(socket) {
   });
 
   socket.on('set maxPlayers', function(maxPlayersData) {
-    if (setMaxPlayers < 1 || players.length < 1) { //if no explicit settting yet OR 1st player 
+    if (setMaxPlayers < 1 || players.length < 1) { //if no explicit settting yet OR 1st player
       setMaxPlayers = Number(maxPlayersData.maxPlayers);
       maxPlayers = setMaxPlayers;
       setMaxPlayersBy = maxPlayersData.name;
@@ -233,18 +233,16 @@ io.on('connection', function(socket) {
 
     // do this when the last player gets dealt
     if (filteredPlayerIndex === (maxPlayers - 1)) {
-
+      //shuffle players array
+      players = players.sort(() => Math.random() - 0.5);
       players.forEach(function(player, index) {
         io.to(player.socketID).emit('save storage', player.socketID);
         io.in('family-scrabble').emit("show other players", player.name);
       });
-
       //first player should start the game when last player is in
       currentTurn = 0;
-      //shuffle players array
-      players = players.sort(() => Math.random() - 0.5);
-      io.to(players[0].socketID).emit('start turn');
 
+      io.to(players[0].socketID).emit('start turn');
       io.emit('update remaining letters', shuffledLetters.length);
       io.emit('show whose turn', 1);
       io.in('family-scrabble').emit('update results table with new row', players.length);
