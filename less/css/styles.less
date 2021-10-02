@@ -327,9 +327,12 @@ button#playerLogin:active {
 
 .letterStack {
   margin-bottom: 20px;
-  display: inline-grid;
-  grid-template-columns: repeat(7, (@tileSize+16));
+  /*display: inline-grid;
+  grid-template-columns: repeat(auto-fit, (@tileSize+16));*/
   grid-gap: 5px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
 
   .cell {
     box-shadow: 2px 2px 5px rgba(0,0,0,0.5), inset 5px 5px 8px rgba(0,0,0,0.5);
